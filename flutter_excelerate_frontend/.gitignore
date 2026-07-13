@@ -46,11 +46,3 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-
-
-/lib/models
-/lib/screens/daily_pulse_screen.dart
-notifications_screen.dart
-program_details_screen.dart
-profile_screen.dart
-programs_screen.dart
