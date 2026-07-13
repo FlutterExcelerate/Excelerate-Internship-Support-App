@@ -60,28 +60,20 @@ class _BrandPanel extends StatelessWidget {
           : CrossAxisAlignment.center,
       children: [
         Container(
-          width: isWide ? 112 : 92,
-          height: isWide ? 112 : 92,
+          width: isWide ? 120 : 100,
+          height: isWide ? 120 : 100,
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(28),
-            gradient: const LinearGradient(
-              colors: [LearnifyColors.primary, LearnifyColors.secondary],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
             boxShadow: [
               BoxShadow(
-                color: LearnifyColors.primary.withValues(alpha: 0.22),
-                blurRadius: 32,
-                offset: const Offset(0, 18),
+                color: Colors.black26,
+                blurRadius: 20,
+                offset: Offset(0, 10),
               ),
             ],
           ),
-          child: const Icon(
-            Icons.school_rounded,
-            color: Colors.white,
-            size: 48,
-          ),
+          child: Image.asset('assets/images/learnify.png', fit: BoxFit.cover),
         ),
         const SizedBox(height: 24),
         Text('Learnify', style: Theme.of(context).textTheme.displaySmall),
