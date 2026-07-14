@@ -7,6 +7,9 @@ void main() {
   runApp(const LearnifyApp());
 }
 
+void runApp(LearnifyApp learnifyApp) {
+}
+
 class LearnifyApp extends StatelessWidget {
   const LearnifyApp({super.key});
   @override
@@ -18,4 +21,13 @@ class LearnifyApp extends StatelessWidget {
       home: const LoginScreen(),
     );
   }
+}
+
+mixin Widget {
+}
+
+mixin BuildContext {
+}
+
+class StatelessWidget {
 }
