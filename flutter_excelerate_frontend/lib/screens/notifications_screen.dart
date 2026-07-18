@@ -44,7 +44,7 @@ class NotificationsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final content = ListView(
       key: const ValueKey('notifications'),
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
       children: [
         const Wrap(
           spacing: 8,

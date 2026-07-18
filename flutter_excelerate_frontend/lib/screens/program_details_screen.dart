@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../models/learnify_models.dart';
 import '../theme/app_theme.dart';
@@ -11,34 +12,94 @@ class ProgramDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return DefaultTabController(
       length: 4,
       child: ResponsiveScaffold(
-        appBar: AppBar(
-          title: const Text('Program Details'),
-          actions: [
-            IconButton(
-              onPressed: () {},
-              icon: const Icon(Icons.favorite_border_rounded),
-            ),
-          ],
-          bottom: const TabBar(
-            isScrollable: true,
-            tabs: [
-              Tab(text: 'Overview'),
-              Tab(text: 'Modules'),
-              Tab(text: 'Analytics'),
-              Tab(text: 'Certificates'),
+        child: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return [
+              SliverAppBar(
+                expandedHeight: 180.0,
+                pinned: true,
+                floating: false,
+                backgroundColor: theme.scaffoldBackgroundColor,
+                surfaceTintColor: Colors.transparent,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                actions: [
+                  IconButton(
+                    onPressed: () {
+                      Feedback.forTap(context);
+                    },
+                    icon: const Icon(Icons.favorite_border_rounded),
+                  ),
+                ],
+                flexibleSpace: FlexibleSpaceBar(
+                  centerTitle: true,
+                  titlePadding: const EdgeInsets.only(bottom: 58),
+                  title: Text(
+                    program.title,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              program.color.withValues(alpha: isDark ? 0.22 : 0.12),
+                              theme.colorScheme.secondary.withValues(alpha: isDark ? 0.18 : 0.08),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: -30,
+                        top: -30,
+                        child: IconBadge(
+                          icon: Icons.school_rounded,
+                          color: program.color,
+                          size: 140,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                bottom: TabBar(
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  indicatorColor: program.color,
+                  labelColor: theme.colorScheme.onSurface,
+                  unselectedLabelColor: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  tabs: const [
+                    Tab(text: 'Overview'),
+                    Tab(text: 'Modules'),
+                    Tab(text: 'Analytics'),
+                    Tab(text: 'Certificates'),
+                  ],
+                ),
+              ),
+            ];
+          },
+          body: TabBarView(
+            children: [
+              _OverviewTab(program: program),
+              _ModulesTab(program: program),
+              _AnalyticsTab(program: program),
+              _CertificatesTab(program: program),
             ],
           ),
-        ),
-        child: TabBarView(
-          children: [
-            _OverviewTab(program: program),
-            _ModulesTab(program: program),
-            _AnalyticsTab(program: program),
-            _CertificatesTab(program: program),
-          ],
         ),
       ),
     );
@@ -52,62 +113,82 @@ class _OverviewTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        SectionCard(
-          padding: const EdgeInsets.all(22),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        Hero(
+          tag: 'program_hero_${program.title}',
+          child: Material(
+            type: MaterialType.transparency,
+            child: SectionCard(
+              padding: const EdgeInsets.all(22),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconBadge(
-                    icon: Icons.school_outlined,
-                    color: program.color,
-                    size: 64,
+                  Row(
+                    children: [
+                      IconBadge(
+                        icon: Icons.school_outlined,
+                        color: program.color,
+                        size: 64,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              program.title,
+                              style: theme.textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              program.description,
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          program.title,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        Text(
-                          program.description,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Progress', style: theme.textTheme.titleMedium),
+                      Text(
+                        '${(program.progress * 100).round()}%',
+                        style: theme.textTheme.titleMedium?.copyWith(color: program.color),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  LinearProgressIndicator(
+                    value: program.progress,
+                    minHeight: 8,
+                    borderRadius: BorderRadius.circular(99),
+                    color: program.color,
+                    backgroundColor: theme.brightness == Brightness.light
+                        ? const Color(0xFFE2E8F0)
+                        : const Color(0xFF1E293B),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        Feedback.forTap(context);
+                      },
+                      style: FilledButton.styleFrom(backgroundColor: program.color),
+                      icon: const Icon(Icons.play_arrow_rounded),
+                      label: const Text('Enroll / Continue'),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-              Text('Progress', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Text(
-                '${(program.progress * 100).round()}%',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: program.progress,
-                minHeight: 9,
-                borderRadius: BorderRadius.circular(99),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.play_arrow_rounded),
-                  label: const Text('Enroll / Continue'),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
         const SizedBox(height: 14),
@@ -115,7 +196,9 @@ class _OverviewTab extends StatelessWidget {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  Feedback.forTap(context);
+                },
                 icon: const Icon(Icons.assignment_turned_in_outlined),
                 label: const Text('Submit'),
               ),
@@ -123,7 +206,9 @@ class _OverviewTab extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  Feedback.forTap(context);
+                },
                 icon: const Icon(Icons.workspace_premium_outlined),
                 label: const Text('Certificate'),
               ),
@@ -177,7 +262,9 @@ class _ModulesTab extends StatelessWidget {
                       Text(
                         module.duration,
                         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: LearnifyColors.muted,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? LearnifyColors.mutedDark
+                              : LearnifyColors.mutedLight,
                         ),
                       ),
                     ],
@@ -228,7 +315,7 @@ class _AnalyticsTab extends StatelessWidget {
           label: 'Streak',
           value: '6 days',
           icon: Icons.local_fire_department_outlined,
-          color: LearnifyColors.warning,
+          color: LearnifyColors.wellness,
         ),
       ],
     );
@@ -276,46 +363,147 @@ class _CertificatesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isReady = program.progress >= 1;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final isReady = program.progress >= 1.0;
+
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        SectionCard(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              IconBadge(
-                icon: Icons.workspace_premium_rounded,
-                color: isReady
-                    ? LearnifyColors.success
-                    : LearnifyColors.warning,
-                size: 72,
+        if (isReady)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFFFBBF24).withValues(alpha: isDark ? 0.15 : 0.08),
+                  const Color(0xFFD97706).withValues(alpha: isDark ? 0.2 : 0.1),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              const SizedBox(height: 18),
-              Text(
-                isReady ? 'Certificate unlocked' : 'Certificate in progress',
-                style: Theme.of(context).textTheme.titleLarge,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                width: 1.5,
               ),
-              const SizedBox(height: 8),
-              Text(
-                isReady
-                    ? 'Download your certificate for ${program.title}.'
-                    : 'Complete all modules and assignments to unlock your certificate.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 22),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: isReady ? () {} : null,
-                  icon: const Icon(Icons.download_rounded),
-                  label: const Text('Download Certificate'),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFBBF24).withValues(alpha: isDark ? 0.05 : 0.1),
+                  blurRadius: 32,
+                  offset: const Offset(0, 16),
                 ),
-              ),
-            ],
+              ],
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFBBF24).withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.workspace_premium_rounded,
+                    color: Color(0xFFD97706),
+                    size: 48,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'CERTIFICATE OF COMPLETION',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFFD97706),
+                    letterSpacing: 2.0,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'This certifies that',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Guest Learner',
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontFamily: 'serif',
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'has successfully mastered',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  program.title,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: program.color,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Feedback.forTap(context);
+                    },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFD97706),
+                      foregroundColor: Colors.white,
+                    ),
+                    icon: const Icon(Icons.download_rounded),
+                    label: const Text('Download Certificate (PDF)'),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          SectionCard(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                IconBadge(
+                  icon: Icons.lock_outline_rounded,
+                  color: theme.brightness == Brightness.light
+                      ? const Color(0xFF64748B)
+                      : const Color(0xFF94A3B8),
+                  size: 72,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Certificate Locked',
+                  style: theme.textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Complete all modules and assignments in ${program.title} to unlock your certificate.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: null,
+                    style: FilledButton.styleFrom(
+                      disabledBackgroundColor: theme.brightness == Brightness.light
+                          ? const Color(0xFFE2E8F0)
+                          : const Color(0xFF1E293B),
+                    ),
+                    child: const Text('Complete Course to Unlock'),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
       ],
     );
   }

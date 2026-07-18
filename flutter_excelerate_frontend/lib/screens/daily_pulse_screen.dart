@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_theme.dart';
 import '../widgets/learnify_widgets.dart';
@@ -29,8 +31,24 @@ class _DailyPulseScreenState extends State<DailyPulseScreen> {
     super.dispose();
   }
 
+  void _selectMood(int index) {
+    if (_selectedMood != index) {
+      HapticFeedback.mediumImpact();
+      setState(() {
+        _selectedMood = index;
+      });
+    }
+  }
+
+  void _submitPulse() {
+    HapticFeedback.mediumImpact();
+    Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return ResponsiveScaffold(
       appBar: AppBar(title: const Text('Daily Pulse')),
       child: ListView(
@@ -49,12 +67,12 @@ class _DailyPulseScreenState extends State<DailyPulseScreen> {
                 const SizedBox(height: 18),
                 Text(
                   'How are you feeling today?',
-                  style: Theme.of(context).textTheme.headlineMedium,
+                  style: theme.textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'A quick check-in helps Learnify personalize your pace and support.',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 24),
                 Row(
@@ -64,52 +82,12 @@ class _DailyPulseScreenState extends State<DailyPulseScreen> {
                     final isSelected = index == _selectedMood;
                     return Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 3),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(18),
-                          onTap: () => setState(() => _selectedMood = index),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? LearnifyColors.wellness.withValues(
-                                      alpha: 0.16,
-                                    )
-                                  : LearnifyColors.canvas,
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color: isSelected
-                                    ? LearnifyColors.wellness
-                                    : LearnifyColors.ink.withValues(
-                                        alpha: 0.06,
-                                      ),
-                              ),
-                            ),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  mood.$2,
-                                  color: isSelected
-                                      ? LearnifyColors.warning
-                                      : LearnifyColors.muted,
-                                ),
-                                const SizedBox(height: 6),
-                                FittedBox(
-                                  child: Text(
-                                    mood.$1,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w800,
-                                      color: isSelected
-                                          ? LearnifyColors.warning
-                                          : LearnifyColors.muted,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: _MoodItem(
+                          label: mood.$1,
+                          icon: mood.$2,
+                          isSelected: isSelected,
+                          onTap: () => _selectMood(index),
                         ),
                       ),
                     );
@@ -130,13 +108,12 @@ class _DailyPulseScreenState extends State<DailyPulseScreen> {
                   runSpacing: 8,
                   children: ['#Work', '#Mission', '#Focus', '#Win', '#NeedHelp']
                       .map((tag) {
+                        final isSelected = _selectedTags.contains(tag);
                         return FilterChip(
-                          label: Text(
-                            tag,
-                            style: TextStyle(color: Colors.black),
-                          ),
-                          selected: _selectedTags.contains(tag),
+                          label: Text(tag),
+                          selected: isSelected,
                           onSelected: (selected) {
+                            HapticFeedback.selectionClick();
                             setState(() {
                               selected
                                   ? _selectedTags.add(tag)
@@ -151,7 +128,7 @@ class _DailyPulseScreenState extends State<DailyPulseScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: _submitPulse,
                     icon: const Icon(Icons.check_circle_outline_rounded),
                     label: const Text('Submit Pulse'),
                   ),
@@ -160,6 +137,95 @@ class _DailyPulseScreenState extends State<DailyPulseScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MoodItem extends StatelessWidget {
+  const _MoodItem({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedScale(
+        scale: isSelected ? 1.12 : 1.0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutBack,
+        child: AnimatedRotation(
+          turns: isSelected ? 0.015 : 0.0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutBack,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? LearnifyColors.wellness.withValues(alpha: 0.16)
+                  : theme.brightness == Brightness.light
+                      ? const Color(0xFFF1F5F9)
+                      : const Color(0xFF1E293B),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: isSelected
+                    ? LearnifyColors.wellness
+                    : theme.brightness == Brightness.light
+                        ? const Color(0xFFE2E8F0)
+                        : const Color(0xFF334155),
+                width: isSelected ? 1.8 : 1.0,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: LearnifyColors.wellness.withValues(alpha: isDark ? 0.2 : 0.15),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ]
+                  : [],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 26,
+                  color: isSelected
+                      ? LearnifyColors.wellness
+                      : (isDark ? LearnifyColors.mutedDark : LearnifyColors.mutedLight),
+                ),
+                const SizedBox(height: 6),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                      color: isSelected
+                          ? LearnifyColors.wellness
+                          : (isDark ? LearnifyColors.mutedDark : LearnifyColors.mutedLight),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:animations/animations.dart';
 
 import '../models/learnify_models.dart';
 import '../theme/app_theme.dart';
@@ -95,7 +96,7 @@ class ProgramsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final content = ListView(
       key: const ValueKey('programs'),
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
       children: [
         TextField(
           decoration: InputDecoration(
@@ -165,7 +166,10 @@ class _ProgramCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              IconBadge(icon: Icons.school_outlined, color: program.color),
+              Hero(
+                tag: 'program_badge_${program.title}',
+                child: IconBadge(icon: Icons.school_outlined, color: program.color),
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -197,7 +201,7 @@ class _ProgramCard extends StatelessWidget {
                 icon: Icons.local_offer_outlined,
                 color: program.color,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   '${program.duration} • ${program.level}',
@@ -206,6 +210,10 @@ class _ProgramCard extends StatelessWidget {
               ),
               FilledButton.tonal(
                 onPressed: () => _openDetails(context),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(64, 38),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                ),
                 child: const Text('Enroll'),
               ),
             ],
@@ -217,7 +225,19 @@ class _ProgramCard extends StatelessWidget {
 
   void _openDetails(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => ProgramDetailsScreen(program: program)),
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            ProgramDetailsScreen(program: program),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SharedAxisTransition(
+            animation: animation,
+            secondaryAnimation: secondaryAnimation,
+            transitionType: SharedAxisTransitionType.scaled,
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 400),
+      ),
     );
   }
 }

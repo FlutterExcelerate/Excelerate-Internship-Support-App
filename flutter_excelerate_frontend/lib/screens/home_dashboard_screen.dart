@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:animations/animations.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_excelerate_frontend/screens/profile_screen.dart';
 
 import '../models/learnify_models.dart';
@@ -7,6 +9,7 @@ import '../widgets/learnify_widgets.dart';
 import 'daily_pulse_screen.dart';
 import 'notifications_screen.dart';
 import 'programs_screen.dart';
+import 'program_details_screen.dart';
 
 class HomeDashboardScreen extends StatefulWidget {
   const HomeDashboardScreen({super.key});
@@ -17,28 +20,22 @@ class HomeDashboardScreen extends StatefulWidget {
 
 class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
   int _selectedIndex = 0;
+  int _previousIndex = 0;
 
-  final _courses = const [
-    CourseSummary(
-      title: 'UX Foundations',
-      subtitle: '4 of 10 modules complete',
-      progress: 0.42,
-      icon: Icons.palette_outlined,
-      accent: LearnifyColors.secondary,
-    ),
-    CourseSummary(
-      title: 'Flutter Sprint',
-      subtitle: 'Next: Navigation patterns',
-      progress: 0.68,
-      icon: Icons.phone_iphone_rounded,
-      accent: LearnifyColors.primary,
-    ),
+  final _courses = [
+    ProgramsScreen.programs[0],
+    ProgramsScreen.programs[2],
   ];
 
   @override
   Widget build(BuildContext context) {
+
     final pages = [
-      _DashboardTab(courses: _courses, onNavigate: _openTab),
+      _DashboardTab(
+        courses: _courses, 
+        onNavigate: _openTab,
+        onTapCourse: (program) => _openProgramDetails(context, program),
+      ),
       const ProgramsScreen(showAppBar: false),
       const NotificationsScreen(showAppBar: false),
       const ProfileTab(),
@@ -57,6 +54,8 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
           ],
         ),
         actions: [
+          const ThemeToggleButton(),
+          const SizedBox(width: 8),
           IconButton(
             onPressed: () => _openTab(2),
             icon: const Icon(Icons.notifications_none_rounded),
@@ -68,35 +67,36 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: _openTab,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Home',
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: GradientBlobBackground(
+              child: PageTransitionSwitcher(
+                duration: const Duration(milliseconds: 350),
+                reverse: _selectedIndex < _previousIndex,
+                transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
+                  return SharedAxisTransition(
+                    animation: primaryAnimation,
+                    secondaryAnimation: secondaryAnimation,
+                    transitionType: SharedAxisTransitionType.horizontal,
+                    fillColor: Colors.transparent,
+                    child: child,
+                  );
+                },
+                child: pages[_selectedIndex],
+              ),
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.grid_view_outlined),
-            selectedIcon: Icon(Icons.grid_view_rounded),
-            label: 'Programs',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.mail_outline_rounded),
-            selectedIcon: Icon(Icons.mail_rounded),
-            label: 'Messages',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: 'Profile',
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 24,
+            child: FloatingGlassNavBar(
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: _openTab,
+            ),
           ),
         ],
-      ),
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 220),
-        child: pages[_selectedIndex],
       ),
     );
   }
@@ -108,25 +108,66 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
     _ => 'Learnify',
   };
 
-  void _openTab(int index) => setState(() => _selectedIndex = index);
+  void _openTab(int index) {
+    setState(() {
+      _previousIndex = _selectedIndex;
+      _selectedIndex = index;
+    });
+  }
+
+  void _openProgramDetails(BuildContext context, Program program) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            ProgramDetailsScreen(program: program),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SharedAxisTransition(
+            animation: animation,
+            secondaryAnimation: secondaryAnimation,
+            transitionType: SharedAxisTransitionType.scaled,
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 400),
+      ),
+    );
+  }
 }
 
 class _DashboardTab extends StatelessWidget {
-  const _DashboardTab({required this.courses, required this.onNavigate});
+  const _DashboardTab({
+    required this.courses, 
+    required this.onNavigate,
+    required this.onTapCourse,
+  });
 
-  final List<CourseSummary> courses;
+  final List<Program> courses;
   final ValueChanged<int> onNavigate;
+  final ValueChanged<Program> onTapCourse;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return ListView(
       key: const ValueKey('dashboard'),
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
       children: [
-        SectionCard(
-          onTap: () => Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (_) => const DailyPulseScreen())),
+        GlassCard(
+          onTap: () => Navigator.of(context).push(
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) => const DailyPulseScreen(),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return SharedAxisTransition(
+                  animation: animation,
+                  secondaryAnimation: secondaryAnimation,
+                  transitionType: SharedAxisTransitionType.scaled,
+                  child: child,
+                );
+              },
+              transitionDuration: const Duration(milliseconds: 400),
+            ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -143,17 +184,21 @@ class _DashboardTab extends StatelessWidget {
                       children: [
                         Text(
                           'Daily Pulse',
-                          style: Theme.of(context).textTheme.titleLarge,
+                          style: theme.textTheme.titleLarge,
                         ),
                         Text(
                           'Log your reflection',
-                          style: Theme.of(context).textTheme.bodyMedium,
+                          style: theme.textTheme.bodyMedium,
                         ),
                       ],
                     ),
                   ),
                   FilledButton.tonal(
                     onPressed: () {},
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(64, 38),
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                    ),
                     child: const Text('Start'),
                   ),
                 ],
@@ -182,7 +227,7 @@ class _DashboardTab extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 24),
         _SectionHeader(
           title: 'My Courses',
           action: 'View all',
@@ -192,10 +237,13 @@ class _DashboardTab extends StatelessWidget {
         ...courses.map(
           (course) => Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: _CourseTile(course: course, onTap: () => onNavigate(1)),
+            child: _CourseTile(
+              program: course, 
+              onTap: () => onTapCourse(course),
+            ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 14),
         _SectionHeader(
           title: 'Upcoming Deadlines',
           action: 'Open',
@@ -203,6 +251,7 @@ class _DashboardTab extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         SectionCard(
+          onTap: () => onNavigate(2),
           child: Row(
             children: [
               const IconBadge(
@@ -216,11 +265,11 @@ class _DashboardTab extends StatelessWidget {
                   children: [
                     Text(
                       'Assignment Due Tomorrow',
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: theme.textTheme.titleMedium,
                     ),
                     Text(
                       'Flutter Sprint - Navigation patterns',
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      style: theme.textTheme.bodyMedium,
                     ),
                   ],
                 ),
@@ -235,9 +284,9 @@ class _DashboardTab extends StatelessWidget {
 }
 
 class _CourseTile extends StatelessWidget {
-  const _CourseTile({required this.course, required this.onTap});
+  const _CourseTile({required this.program, required this.onTap});
 
-  final CourseSummary course;
+  final Program program;
   final VoidCallback onTap;
 
   @override
@@ -246,31 +295,34 @@ class _CourseTile extends StatelessWidget {
       onTap: onTap,
       child: Row(
         children: [
-          IconBadge(icon: course.icon, color: course.accent),
+          Hero(
+            tag: 'program_badge_${program.title}',
+            child: IconBadge(icon: Icons.school_outlined, color: program.color),
+          ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  course.title,
+                  program.title,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  course.subtitle,
+                  '${(program.progress * 100).round()}% complete • ${program.duration}',
                   style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 10),
-                LinearProgressIndicator(
-                  value: course.progress,
-                  borderRadius: BorderRadius.circular(99),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 10),
-          const Icon(Icons.chevron_right_rounded),
+          CircularProgressRing(
+            progress: program.progress,
+            color: program.color,
+            size: 44,
+            strokeWidth: 4.0,
+          ),
         ],
       ),
     );
@@ -295,7 +347,13 @@ class _SectionHeader extends StatelessWidget {
         Expanded(
           child: Text(title, style: Theme.of(context).textTheme.titleLarge),
         ),
-        TextButton(onPressed: onTap, child: Text(action)),
+        TextButton(
+          onPressed: onTap,
+          child: Text(
+            action,
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+          ),
+        ),
       ],
     );
   }

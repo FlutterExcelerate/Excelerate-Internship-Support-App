@@ -9,7 +9,7 @@ class ProfileTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       key: const ValueKey('profile'),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
       children: [
         SectionCard(
           child: Column(
