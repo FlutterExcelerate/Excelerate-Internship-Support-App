@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:animations/animations.dart';
+import 'package:flutter_excelerate_frontend/firebase/auth/service/repository.dart';
 
 import '../../../theme/app_theme.dart';
 import '../../../widgets/learnify_widgets.dart';
@@ -12,7 +13,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _entranceController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -30,15 +32,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       curve: Curves.easeIn,
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.08),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _entranceController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     _entranceController.forward();
   }
@@ -108,7 +108,9 @@ class _BrandPanel extends StatelessWidget {
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: isWide ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+      crossAxisAlignment: isWide
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.center,
       children: [
         Container(
           width: isWide ? 112 : 92,
@@ -122,7 +124,9 @@ class _BrandPanel extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: theme.colorScheme.primary.withValues(alpha: isDark ? 0.35 : 0.2),
+                color: theme.colorScheme.primary.withValues(
+                  alpha: isDark ? 0.35 : 0.2,
+                ),
                 blurRadius: 32,
                 offset: const Offset(0, 16),
               ),
@@ -141,7 +145,9 @@ class _BrandPanel extends StatelessWidget {
           'Personalized learning, wellbeing check-ins, and deadlines in one calm workspace.',
           textAlign: isWide ? TextAlign.left : TextAlign.center,
           style: theme.textTheme.bodyLarge?.copyWith(
-            color: isDark ? LearnifyColors.mutedDark : LearnifyColors.mutedLight,
+            color: isDark
+                ? LearnifyColors.mutedDark
+                : LearnifyColors.mutedLight,
           ),
         ),
       ],
@@ -172,7 +178,14 @@ class _LoginActions extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: () => _enterApp(context),
+              onPressed: () async {
+                final result = await AuthRepository.instance.signInWithGoogle();
+
+                if (result != null) {
+                  // ignore: use_build_context_synchronously
+                  _enterApp(context);
+                }
+              },
               icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
               label: const Text('Continue with Google'),
             ),
@@ -216,7 +229,8 @@ class _LoginActions extends StatelessWidget {
   void _enterApp(BuildContext context) {
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => const HomeDashboardScreen(),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const HomeDashboardScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeThroughTransition(
             animation: animation,
