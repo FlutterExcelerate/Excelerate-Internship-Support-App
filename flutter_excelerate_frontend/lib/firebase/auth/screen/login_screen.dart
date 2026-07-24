@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:animations/animations.dart';
 
-import '../theme/app_theme.dart';
-import '../widgets/learnify_widgets.dart';
-import 'home_dashboard_screen.dart';
+import '../../../theme/app_theme.dart';
+import '../../../widgets/learnify_widgets.dart';
+import '../../../screens/home_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
