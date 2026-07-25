@@ -4,15 +4,11 @@ import 'package:google_sign_in/google_sign_in.dart';
 class AuthRepository {
   AuthRepository._();
 
-  static final instance = AuthRepository._();
+  static final AuthRepository instance = AuthRepository._();
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final _googleSignIn = GoogleSignIn();
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
-
-  Future<void> initialize() async {
-    await _googleSignIn.initialize();
-  }
+  FirebaseAuth get _auth => FirebaseAuth.instance;
 
   Stream<User?> authStateChanges() {
     return _auth.authStateChanges();
@@ -22,13 +18,20 @@ class AuthRepository {
 
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      final account = await _googleSignIn.authenticate();
-      final auth = account.authentication;
+      final GoogleSignInAccount? account = await _googleSignIn.signIn();
+      if (account == null) return null;
 
-      final credential = GoogleAuthProvider.credential(idToken: auth.idToken);
+      final GoogleSignInAuthentication googleAuth =
+          await account.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
 
       return await _auth.signInWithCredential(credential);
     } catch (e) {
+      // ignore: avoid_print
       print(e);
       return null;
     }
@@ -36,7 +39,6 @@ class AuthRepository {
 
   Future<void> signOut() async {
     await _googleSignIn.signOut();
-
     await _auth.signOut();
   }
 }

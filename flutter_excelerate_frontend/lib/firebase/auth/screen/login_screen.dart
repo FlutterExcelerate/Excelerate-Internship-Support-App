@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:animations/animations.dart';
-import 'package:flutter_excelerate_frontend/firebase/auth/service/repository.dart';
+import 'package:flutter_excelerate_frontend/firebase/auth/service/auth_controller.dart';
+import 'package:rounded_loading_button_plus/rounded_loading_button.dart';
 
 import '../../../theme/app_theme.dart';
 import '../../../widgets/learnify_widgets.dart';
@@ -155,8 +158,38 @@ class _BrandPanel extends StatelessWidget {
   }
 }
 
-class _LoginActions extends StatelessWidget {
+class _LoginActions extends StatefulWidget {
   const _LoginActions();
+
+  @override
+  State<_LoginActions> createState() => _LoginActionsState();
+}
+
+class _LoginActionsState extends State<_LoginActions> {
+  final RoundedLoadingButtonController _btnController =
+      RoundedLoadingButtonController();
+  final AuthController _authController = AuthController();
+
+  Future<void> _handleGoogleSignIn() async {
+    try {
+      final success = await _authController.signInWithGoogle();
+      if (success) {
+        _btnController.success();
+        await Future.delayed(const Duration(milliseconds: 600));
+        if (mounted) {
+          _enterApp(context);
+        }
+      } else {
+        _btnController.error();
+        await Future.delayed(const Duration(seconds: 2));
+        _btnController.reset();
+      }
+    } catch (_) {
+      _btnController.error();
+      await Future.delayed(const Duration(seconds: 2));
+      _btnController.reset();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -175,26 +208,32 @@ class _LoginActions extends StatelessWidget {
             style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: 28),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () async {
-                final result = await AuthRepository.instance.signInWithGoogle();
-
-                if (result != null) {
-                  // ignore: use_build_context_synchronously
-                  _enterApp(context);
-                }
-              },
-              icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
-              label: const Text('Continue with Google'),
+          RoundedLoadingButton(
+            controller: _btnController,
+            onPressed: _handleGoogleSignIn,
+            color: theme.colorScheme.primary,
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.g_mobiledata_rounded, size: 28, color: Colors.white),
+                SizedBox(width: 8),
+                Text(
+                  'Continue with Google',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () => _enterApp(context),
+              onPressed: () {
+                // _enterApp(context);
+              },
               icon: const Icon(Icons.person_outline_rounded),
               label: const Text('Continue as Guest'),
             ),
@@ -203,7 +242,9 @@ class _LoginActions extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () => _enterApp(context),
+              onPressed: () {
+                // _enterApp(context);
+              },
               icon: const Icon(Icons.admin_panel_settings_outlined),
               label: const Text('Admin Login'),
             ),
