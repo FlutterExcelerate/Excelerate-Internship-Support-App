@@ -1,9 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_excelerate_frontend/firebase/auth/auth_gate.dart';
 import 'package:flutter_excelerate_frontend/firebase/auth/service/repository.dart';
-import 'package:flutter_excelerate_frontend/firebase/firebase_options.dart';
-import 'firebase/auth/screen/login_screen.dart';
+import 'package:flutter_excelerate_frontend/firebase/auth/firebase_options.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
@@ -38,7 +37,7 @@ class _LearnifyAppState extends State<LearnifyApp> {
           theme: LearnifyTheme.light(),
           darkTheme: LearnifyTheme.dark(),
           themeMode: currentMode,
-          home: const LoginScreen(),
+          home: const AuthGate(),
         );
       },
     );
