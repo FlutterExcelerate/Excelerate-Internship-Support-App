@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_excelerate_frontend/firebase/auth/admin_access.dart';
-import 'package:flutter_excelerate_frontend/firebase/auth/service/auth_controller.dart';
+import 'package:flutter_excelerate_frontend/firebase/service/auth_controller.dart';
 import 'package:rounded_loading_button_plus/rounded_loading_button.dart';
 
-import '../../../theme/app_theme.dart';
-import '../../../widgets/learnify_widgets.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/learnify_widgets.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_excelerate_frontend/firebase/auth/service/repository.dart';
+import 'package:flutter_excelerate_frontend/firebase/service/repository.dart';
 import 'package:flutter_excelerate_frontend/theme/app_theme.dart';
 import 'package:flutter_excelerate_frontend/widgets/learnify_widgets.dart';
 
@@ -11,6 +11,7 @@ class ProfileTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final User? user = FirebaseAuth.instance.currentUser;
     final AuthRepository repository = AuthRepository.instance;
+    final uid = user!.uid;
     return ListView(
       key: const ValueKey('profile'),
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
@@ -22,10 +23,10 @@ class ProfileTab extends StatelessWidget {
                 radius: 42,
                 backgroundColor: LearnifyColors.primary,
                 backgroundImage:
-                    (user?.photoURL != null && user!.photoURL!.isNotEmpty)
+                    (user.photoURL != null && user.photoURL!.isNotEmpty)
                     ? NetworkImage(user.photoURL!)
                     : null,
-                child: (user?.photoURL == null || user!.photoURL!.isEmpty)
+                child: (user.photoURL == null || user.photoURL!.isEmpty)
                     ? const Icon(
                         Icons.person_rounded,
                         color: Colors.white,
@@ -35,12 +36,12 @@ class ProfileTab extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               Text(
-                user?.displayName ?? 'Student Learner',
+                user.displayName ?? 'Student Learner',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 5),
               Text(
-                user?.email ?? 'student@example.com',
+                user.email ?? 'student@example.com',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 5),

@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_excelerate_frontend/firebase/auth/service/repository.dart';
+import 'package:flutter_excelerate_frontend/firebase/service/repository.dart';
 
 class AuthController extends ChangeNotifier {
   final AuthRepository _repository = AuthRepository.instance;

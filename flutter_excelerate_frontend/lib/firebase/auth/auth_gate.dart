@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_excelerate_frontend/firebase/auth/admin_access.dart';
-import 'package:flutter_excelerate_frontend/firebase/auth/screen/login_screen.dart';
+import 'package:flutter_excelerate_frontend/firebase/screen/login_screen.dart';
 import 'package:flutter_excelerate_frontend/admin/screens/admin_dashboard_screen.dart';
 import 'package:flutter_excelerate_frontend/screens/home_dashboard_screen.dart';
 

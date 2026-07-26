@@ -2,7 +2,7 @@ import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 
 import '../../firebase/auth/admin_access.dart';
-import '../../firebase/auth/service/repository.dart';
+import '../../firebase/service/repository.dart';
 import '../../models/learnify_models.dart';
 import '../../screens/notifications_screen.dart';
 import '../../screens/programs_screen.dart';

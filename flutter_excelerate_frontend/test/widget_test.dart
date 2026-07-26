@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flutter_excelerate_frontend/firebase/auth/screen/login_screen.dart';
+import 'package:flutter_excelerate_frontend/firebase/screen/login_screen.dart';
 import 'package:flutter_excelerate_frontend/theme/app_theme.dart';
 
 void main() {

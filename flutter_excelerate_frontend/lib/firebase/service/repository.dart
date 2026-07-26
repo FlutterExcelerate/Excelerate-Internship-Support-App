@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_excelerate_frontend/firebase/service/user_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthRepository {
@@ -30,7 +31,13 @@ class AuthRepository {
         idToken: googleAuth.idToken,
       );
 
-      return await _auth.signInWithCredential(credential);
+      final userCredential = await _auth.signInWithCredential(credential);
+
+      if (userCredential.user != null) {
+        await UserService.instance.createUserIfNotExists(userCredential.user!);
+      }
+
+      return userCredential;
     } catch (e) {
       debugPrint('Google Sign-In repository error: $e');
       rethrow;
