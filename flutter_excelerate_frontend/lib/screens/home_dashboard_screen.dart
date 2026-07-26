@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_excelerate_frontend/screens/profile_screen.dart';
-
 import '../models/learnify_models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/learnify_widgets.dart';
@@ -158,6 +157,9 @@ class _DashboardTab extends StatelessWidget {
                   ),
                 ],
               ),
+
+              const SizedBox(height: 18),
+
               const SizedBox(height: 18),
               const Wrap(
                 spacing: 8,

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_theme.dart';
 import '../widgets/learnify_widgets.dart';
 import 'home_dashboard_screen.dart';
+import '../services/firestore_service.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -128,7 +129,29 @@ class _LoginActions extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () => _enterApp(context),
+              onPressed: () async {
+                try {
+                  await FirebaseAuth.instance.signInAnonymously();
+                  await FirestoreService().ensureCurrentUserProfile();
+
+                  if (!context.mounted) return;
+                  _enterApp(context);
+                } on FirebaseAuthException catch (error) {
+                  if (!context.mounted) return;
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(error.message ?? 'Guest login failed'),
+                    ),
+                  );
+                } catch (error) {
+                  if (!context.mounted) return;
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Profile creation failed: $error')),
+                  );
+                }
+              },
               icon: const Icon(Icons.person_outline_rounded),
               label: const Text('Continue as Guest'),
             ),
