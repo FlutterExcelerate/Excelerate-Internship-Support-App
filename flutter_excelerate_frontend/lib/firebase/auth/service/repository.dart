@@ -32,13 +32,17 @@ class AuthRepository {
       return await _auth.signInWithCredential(credential);
     } catch (e) {
       // ignore: avoid_print
-      print(e);
-      return null;
+      print('Google Sign-In repository error: $e');
+      rethrow;
     }
   }
 
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
     await _auth.signOut();
   }
 }
+
+

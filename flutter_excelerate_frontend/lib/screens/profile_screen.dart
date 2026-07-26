@@ -10,7 +10,7 @@ class ProfileTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final User? user = FirebaseAuth.instance.currentUser;
-    final AuthRepository _repository = AuthRepository.instance;
+    final AuthRepository repository = AuthRepository.instance;
     return ListView(
       key: const ValueKey('profile'),
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
@@ -35,12 +35,12 @@ class ProfileTab extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               Text(
-                user?.displayName ?? 'Guest Learner',
+                user?.displayName ?? 'Student Learner',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 5),
               Text(
-                user?.email ?? 'guest@example.com',
+                user?.email ?? 'student@example.com',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 5),
@@ -53,7 +53,7 @@ class ProfileTab extends StatelessWidget {
                 width: double.infinity,
                 child: FilledButton.icon(
                   onPressed: () async {
-                    await _repository.signOut();
+                    await repository.signOut();
                   },
                   icon: const Icon(Icons.logout_rounded),
                   label: const Text('Logout'),

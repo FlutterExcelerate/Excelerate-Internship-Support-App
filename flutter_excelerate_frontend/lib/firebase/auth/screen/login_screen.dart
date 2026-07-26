@@ -1,13 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:animations/animations.dart';
 import 'package:flutter_excelerate_frontend/firebase/auth/service/auth_controller.dart';
 import 'package:rounded_loading_button_plus/rounded_loading_button.dart';
 
 import '../../../theme/app_theme.dart';
 import '../../../widgets/learnify_widgets.dart';
-import '../../../screens/home_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -175,20 +173,51 @@ class _LoginActionsState extends State<_LoginActions> {
       final success = await _authController.signInWithGoogle();
       if (success) {
         _btnController.success();
-        await Future.delayed(const Duration(milliseconds: 600));
-        if (mounted) {
-          _enterApp(context);
-        }
       } else {
         _btnController.error();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Google Sign-In was cancelled by user.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
         await Future.delayed(const Duration(seconds: 2));
         _btnController.reset();
       }
-    } catch (_) {
+    } catch (e) {
       _btnController.error();
+      if (mounted) {
+        final errText = e.toString();
+        String userFriendlyMsg = 'Google Sign-In failed: $errText';
+        if (errText.contains('10') || errText.contains('sign_in_failed')) {
+          userFriendlyMsg =
+              'Google Sign-In failed: Developer configuration error (Ensure SHA-1 fingerprint is added in Firebase Console).';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(userFriendlyMsg),
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
       await Future.delayed(const Duration(seconds: 2));
       _btnController.reset();
     }
+  }
+
+  void _handleAdminLogin() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Admin Portal is currently under development. Please sign in with Google for Student access.',
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -201,10 +230,10 @@ class _LoginActionsState extends State<_LoginActions> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Welcome back', style: theme.textTheme.titleLarge),
+          Text('Student Portal', style: theme.textTheme.titleLarge),
           const SizedBox(height: 8),
           Text(
-            'Choose how you want to continue your session.',
+            'Sign in with your Google account to access your courses and workspace.',
             style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: 28),
@@ -212,17 +241,18 @@ class _LoginActionsState extends State<_LoginActions> {
             controller: _btnController,
             onPressed: _handleGoogleSignIn,
             color: theme.colorScheme.primary,
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.g_mobiledata_rounded, size: 28, color: Colors.white),
-                SizedBox(width: 8),
+                const Icon(
+                  Icons.g_mobiledata_rounded,
+                  size: 28,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 8),
                 Text(
                   'Continue with Google',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: theme.textTheme.titleMedium,
                 ),
               ],
             ),
@@ -231,22 +261,9 @@ class _LoginActionsState extends State<_LoginActions> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () {
-                // _enterApp(context);
-              },
-              icon: const Icon(Icons.person_outline_rounded),
-              label: const Text('Continue as Guest'),
-            ),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                // _enterApp(context);
-              },
+              onPressed: _handleAdminLogin,
               icon: const Icon(Icons.admin_panel_settings_outlined),
-              label: const Text('Admin Login'),
+              label: const Text('Admin Login (Coming Soon)'),
             ),
           ),
           const SizedBox(height: 28),
@@ -263,23 +280,6 @@ class _LoginActionsState extends State<_LoginActions> {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  void _enterApp(BuildContext context) {
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const HomeDashboardScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeThroughTransition(
-            animation: animation,
-            secondaryAnimation: secondaryAnimation,
-            child: child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 500),
       ),
     );
   }

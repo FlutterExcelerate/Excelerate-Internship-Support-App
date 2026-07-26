@@ -23,7 +23,7 @@ class AuthController extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
 
-      return false;
+      rethrow;
     }
   }
 
@@ -31,3 +31,5 @@ class AuthController extends ChangeNotifier {
     await _repository.signOut();
   }
 }
+
+
