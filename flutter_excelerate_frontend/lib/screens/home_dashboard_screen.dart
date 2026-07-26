@@ -22,17 +22,13 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
   int _selectedIndex = 0;
   int _previousIndex = 0;
 
-  final _courses = [
-    ProgramsScreen.programs[0],
-    ProgramsScreen.programs[2],
-  ];
+  final _courses = [ProgramsScreen.programs[0], ProgramsScreen.programs[2]];
 
   @override
   Widget build(BuildContext context) {
-
     final pages = [
       _DashboardTab(
-        courses: _courses, 
+        courses: _courses,
         onNavigate: _openTab,
         onTapCourse: (program) => _openProgramDetails(context, program),
       ),
@@ -74,15 +70,16 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
               child: PageTransitionSwitcher(
                 duration: const Duration(milliseconds: 350),
                 reverse: _selectedIndex < _previousIndex,
-                transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
-                  return SharedAxisTransition(
-                    animation: primaryAnimation,
-                    secondaryAnimation: secondaryAnimation,
-                    transitionType: SharedAxisTransitionType.horizontal,
-                    fillColor: Colors.transparent,
-                    child: child,
-                  );
-                },
+                transitionBuilder:
+                    (child, primaryAnimation, secondaryAnimation) {
+                      return SharedAxisTransition(
+                        animation: primaryAnimation,
+                        secondaryAnimation: secondaryAnimation,
+                        transitionType: SharedAxisTransitionType.horizontal,
+                        fillColor: Colors.transparent,
+                        child: child,
+                      );
+                    },
                 child: pages[_selectedIndex],
               ),
             ),
@@ -136,7 +133,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
 
 class _DashboardTab extends StatelessWidget {
   const _DashboardTab({
-    required this.courses, 
+    required this.courses,
     required this.onNavigate,
     required this.onTapCourse,
   });
@@ -156,15 +153,17 @@ class _DashboardTab extends StatelessWidget {
         GlassCard(
           onTap: () => Navigator.of(context).push(
             PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) => const DailyPulseScreen(),
-              transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                return SharedAxisTransition(
-                  animation: animation,
-                  secondaryAnimation: secondaryAnimation,
-                  transitionType: SharedAxisTransitionType.scaled,
-                  child: child,
-                );
-              },
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  const DailyPulseScreen(),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                    return SharedAxisTransition(
+                      animation: animation,
+                      secondaryAnimation: secondaryAnimation,
+                      transitionType: SharedAxisTransitionType.scaled,
+                      child: child,
+                    );
+                  },
               transitionDuration: const Duration(milliseconds: 400),
             ),
           ),
@@ -182,10 +181,7 @@ class _DashboardTab extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Daily Pulse',
-                          style: theme.textTheme.titleLarge,
-                        ),
+                        Text('Daily Pulse', style: theme.textTheme.titleLarge),
                         Text(
                           'Log your reflection',
                           style: theme.textTheme.bodyMedium,
@@ -238,7 +234,7 @@ class _DashboardTab extends StatelessWidget {
           (course) => Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: _CourseTile(
-              program: course, 
+              program: course,
               onTap: () => onTapCourse(course),
             ),
           ),

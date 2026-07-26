@@ -501,8 +501,13 @@ class _BlobPainter extends CustomPainter {
   }
 }
 
-class _NavItem {
-  const _NavItem(this.selectedIcon, this.icon, this.label);
+class GlassNavDestination {
+  const GlassNavDestination({
+    required this.selectedIcon,
+    required this.icon,
+    required this.label,
+  });
+
   final IconData selectedIcon;
   final IconData icon;
   final String label;
@@ -513,10 +518,35 @@ class FloatingGlassNavBar extends StatefulWidget {
     super.key,
     required this.selectedIndex,
     required this.onDestinationSelected,
+    this.destinations = _defaultDestinations,
   });
 
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
+  final List<GlassNavDestination> destinations;
+
+  static const _defaultDestinations = [
+    GlassNavDestination(
+      selectedIcon: Icons.home_rounded,
+      icon: Icons.home_outlined,
+      label: 'Home',
+    ),
+    GlassNavDestination(
+      selectedIcon: Icons.grid_view_rounded,
+      icon: Icons.grid_view_outlined,
+      label: 'Programs',
+    ),
+    GlassNavDestination(
+      selectedIcon: Icons.mail_rounded,
+      icon: Icons.mail_outline_rounded,
+      label: 'Messages',
+    ),
+    GlassNavDestination(
+      selectedIcon: Icons.person_rounded,
+      icon: Icons.person_outline_rounded,
+      label: 'Profile',
+    ),
+  ];
 
   @override
   State<FloatingGlassNavBar> createState() => _FloatingGlassNavBarState();
@@ -524,13 +554,6 @@ class FloatingGlassNavBar extends StatefulWidget {
 
 class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
     with SingleTickerProviderStateMixin {
-  static const _items = [
-    _NavItem(Icons.home_rounded, Icons.home_outlined, 'Home'),
-    _NavItem(Icons.grid_view_rounded, Icons.grid_view_outlined, 'Programs'),
-    _NavItem(Icons.mail_rounded, Icons.mail_outline_rounded, 'Messages'),
-    _NavItem(Icons.person_rounded, Icons.person_outline_rounded, 'Profile'),
-  ];
-
   late AnimationController _pillController;
   late Animation<double> _pillPosition;
   int _previousIndex = 0;
@@ -586,6 +609,7 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
     final pillBorderColor = isDark
         ? const Color(0xFFFFFFFF).withValues(alpha: 0.14)
         : theme.colorScheme.primary.withValues(alpha: 0.18);
+    final items = widget.destinations;
 
     return Container(
       height: 78,
@@ -620,7 +644,7 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final totalWidth = constraints.maxWidth;
-                final slotWidth = totalWidth / _items.length;
+                final slotWidth = totalWidth / items.length;
 
                 return AnimatedBuilder(
                   animation: _pillPosition,
@@ -670,8 +694,8 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
                           },
                         ),
                         Row(
-                          children: List.generate(_items.length, (index) {
-                            final item = _items[index];
+                          children: List.generate(items.length, (index) {
+                            final item = items[index];
                             final isSelected = widget.selectedIndex == index;
                             final activeColor = isDark
                                 ? Colors.white

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_excelerate_frontend/firebase/auth/admin_access.dart';
 import 'package:flutter_excelerate_frontend/firebase/auth/service/auth_controller.dart';
 import 'package:rounded_loading_button_plus/rounded_loading_button.dart';
 
@@ -166,6 +167,8 @@ class _LoginActions extends StatefulWidget {
 class _LoginActionsState extends State<_LoginActions> {
   final RoundedLoadingButtonController _btnController =
       RoundedLoadingButtonController();
+  final RoundedLoadingButtonController _adminBtnController =
+      RoundedLoadingButtonController();
   final AuthController _authController = AuthController();
 
   Future<void> _handleGoogleSignIn() async {
@@ -209,15 +212,65 @@ class _LoginActionsState extends State<_LoginActions> {
     }
   }
 
-  void _handleAdminLogin() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Admin Portal is currently under development. Please sign in with Google for Student access.',
-        ),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  Future<void> _handleAdminLogin() async {
+    try {
+      await _authController.signOut();
+      final credential = await _authController.signInWithGoogleCredential();
+      final email = credential?.user?.email;
+
+      if (credential == null) {
+        _adminBtnController.error();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Admin Google Sign-In was cancelled.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else if (!AdminAccess.hasConfiguredAdmins) {
+        await _authController.signOut();
+        _adminBtnController.error();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'No admin email is configured. Start Flutter with --dart-define=ADMIN_EMAILS=your-email@example.com.',
+              ),
+              duration: Duration(seconds: 6),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else if (!AdminAccess.isAdminEmail(email)) {
+        await _authController.signOut();
+        _adminBtnController.error();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$email is not configured for admin access.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else {
+        _adminBtnController.success();
+      }
+    } catch (e) {
+      _adminBtnController.error();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Admin Sign-In failed: $e'),
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+
+    await Future.delayed(const Duration(seconds: 2));
+    _adminBtnController.reset();
   }
 
   @override
@@ -258,12 +311,21 @@ class _LoginActionsState extends State<_LoginActions> {
             ),
           ),
           const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _handleAdminLogin,
-              icon: const Icon(Icons.admin_panel_settings_outlined),
-              label: const Text('Admin Login (Coming Soon)'),
+          RoundedLoadingButton(
+            controller: _adminBtnController,
+            onPressed: _handleAdminLogin,
+            color: theme.colorScheme.secondary,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.admin_panel_settings_outlined,
+                  size: 22,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 8),
+                Text('Continue as Admin', style: theme.textTheme.titleMedium),
+              ],
             ),
           ),
           const SizedBox(height: 28),

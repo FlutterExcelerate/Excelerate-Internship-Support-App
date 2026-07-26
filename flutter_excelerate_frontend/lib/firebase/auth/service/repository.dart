@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthRepository {
@@ -31,8 +32,7 @@ class AuthRepository {
 
       return await _auth.signInWithCredential(credential);
     } catch (e) {
-      // ignore: avoid_print
-      print('Google Sign-In repository error: $e');
+      debugPrint('Google Sign-In repository error: $e');
       rethrow;
     }
   }
@@ -44,5 +44,3 @@ class AuthRepository {
     await _auth.signOut();
   }
 }
-
-
