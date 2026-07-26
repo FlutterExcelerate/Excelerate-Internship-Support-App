@@ -586,10 +586,14 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
           ).animate(
             CurvedAnimation(parent: _pillController, curve: Curves.easeOutExpo),
           );
+      _previousIndex = oldWidget.selectedIndex;
       _pillController
         ..reset()
-        ..forward();
-      _previousIndex = oldWidget.selectedIndex;
+        ..forward().whenComplete(() {
+          if (mounted) {
+            setState(() => _previousIndex = widget.selectedIndex);
+          }
+        });
     }
   }
 
@@ -612,7 +616,7 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
     final items = widget.destinations;
 
     return Container(
-      height: 78,
+      height: 76,
       decoration: BoxDecoration(
         color: isDark
             ? const Color(0xFF111827).withValues(alpha: 0.55)
@@ -640,7 +644,7 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final totalWidth = constraints.maxWidth;
@@ -659,19 +663,23 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
                           builder: (context, __) {
                             final travel =
                                 (_pillPosition.value - _previousIndex).abs();
-                            final stretch = (travel * 12).clamp(0.0, 24.0);
-                            final pillWidth = slotWidth - 16 + stretch;
-                            final adjustedLeft = pillLeft - stretch / 2 + 8;
+                            final decay = 1 - _pillController.value;
+                            final stretch = (travel * 10 * decay).clamp(
+                              0.0,
+                              18.0,
+                            );
+                            final pillWidth = slotWidth - 10 + stretch;
+                            final adjustedLeft = pillLeft - stretch / 2 + 5;
 
                             return Positioned(
                               left: adjustedLeft,
-                              top: 0,
-                              bottom: 0,
+                              top: 4,
+                              bottom: 4,
                               width: pillWidth,
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: pillColor,
-                                  borderRadius: BorderRadius.circular(26),
+                                  borderRadius: BorderRadius.circular(24),
                                   border: Border.all(
                                     color: pillBorderColor,
                                     width: 1.0,
@@ -703,7 +711,6 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
                             final inactiveColor = isDark
                                 ? const Color(0xFF94A3B8)
                                 : const Color(0xFF64748B);
-
                             return Expanded(
                               child: GestureDetector(
                                 onTap: () {
@@ -730,42 +737,30 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
                                                 child: child,
                                               ),
                                             ),
-                                        child: Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 5,
-                                          ),
-                                          child: Icon(
-                                            isSelected
-                                                ? item.selectedIcon
-                                                : item.icon,
-                                            key: ValueKey(
-                                              '${index}_$isSelected',
-                                            ),
-                                            color: isSelected
-                                                ? activeColor
-                                                : inactiveColor,
-                                            size: 22,
-                                          ),
+                                        child: Icon(
+                                          isSelected
+                                              ? item.selectedIcon
+                                              : item.icon,
+                                          key: ValueKey('${index}_$isSelected'),
+                                          color: isSelected
+                                              ? activeColor
+                                              : inactiveColor,
+                                          size: 22,
                                         ),
                                       ),
-                                      const SizedBox(height: 3),
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 5,
-                                        ),
-                                        child: Text(
-                                          item.label,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: GoogleFonts.plusJakartaSans(
-                                            color: isSelected
-                                                ? activeColor
-                                                : inactiveColor,
-                                            fontWeight: isSelected
-                                                ? FontWeight.w700
-                                                : FontWeight.w500,
-                                            fontSize: 10.5,
-                                            letterSpacing: -0.1,
-                                          ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        item.label,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: isSelected
+                                              ? activeColor
+                                              : inactiveColor,
+                                          fontWeight: isSelected
+                                              ? FontWeight.w700
+                                              : FontWeight.w500,
+                                          fontSize: 10.5,
+                                          letterSpacing: -0.1,
                                         ),
                                       ),
                                     ],
