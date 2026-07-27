@@ -18,6 +18,9 @@ class LearnifyApp extends StatefulWidget {
     ThemeMode.system,
   );
 
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
   @override
   State<LearnifyApp> createState() => _LearnifyAppState();
 }
@@ -29,6 +32,7 @@ class _LearnifyAppState extends State<LearnifyApp> {
       valueListenable: LearnifyApp.themeNotifier,
       builder: (_, ThemeMode currentMode, __) {
         return MaterialApp(
+          navigatorKey: LearnifyApp.navigatorKey,
           title: 'Learnify',
           debugShowCheckedModeBanner: false,
           theme: LearnifyTheme.light(),

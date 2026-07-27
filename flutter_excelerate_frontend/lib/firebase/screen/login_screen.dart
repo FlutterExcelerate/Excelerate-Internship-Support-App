@@ -1,8 +1,8 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_excelerate_frontend/firebase/auth/admin_access.dart';
+import 'package:flutter_excelerate_frontend/admin/screens/admin_code_dialog.dart';
 import 'package:flutter_excelerate_frontend/firebase/service/auth_controller.dart';
+import 'package:flutter_excelerate_frontend/main.dart';
 import 'package:rounded_loading_button_plus/rounded_loading_button.dart';
 
 import '../../theme/app_theme.dart';
@@ -214,55 +214,55 @@ class _LoginActionsState extends State<_LoginActions> {
 
   Future<void> _handleAdminLogin() async {
     try {
-      await _authController.signOut();
       final credential = await _authController.signInWithGoogleCredential();
-      final email = credential?.user?.email;
 
       if (credential == null) {
         _adminBtnController.error();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Admin Google Sign-In was cancelled.'),
+              content: Text("Google Sign-In was cancelled."),
               behavior: SnackBarBehavior.floating,
             ),
           );
         }
-      } else if (!AdminAccess.hasConfiguredAdmins) {
+        await Future.delayed(const Duration(seconds: 2));
+        _adminBtnController.reset();
+        return;
+      }
+      final navigator = LearnifyApp.navigatorKey.currentState;
+      if (navigator == null) return;
+
+      final success = await navigator.push<bool>(
+        DialogRoute<bool>(
+          // ignore: use_build_context_synchronously
+          context: navigator.context,
+          barrierDismissible: false,
+          builder: (_) => const AdminCodeDialog(),
+        ),
+      );
+
+      if (success == true) {
+        _adminBtnController.success();
+      } else {
         await _authController.signOut();
         _adminBtnController.error();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text(
-                'No admin email is configured. Start Flutter with --dart-define=ADMIN_EMAILS=your-email@example.com.',
-              ),
-              duration: Duration(seconds: 6),
+              content: Text("Admin verification failed. Signed out."),
               behavior: SnackBarBehavior.floating,
             ),
           );
         }
-      } else if (!AdminAccess.isAdminEmail(email)) {
-        await _authController.signOut();
-        _adminBtnController.error();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('$email is not configured for admin access.'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      } else {
-        _adminBtnController.success();
       }
     } catch (e) {
+      await _authController.signOut();
       _adminBtnController.error();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Admin Sign-In failed: $e'),
-            duration: const Duration(seconds: 4),
+            content: Text("Admin login error: ${e.toString()}"),
             behavior: SnackBarBehavior.floating,
           ),
         );

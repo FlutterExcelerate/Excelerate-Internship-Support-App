@@ -11,7 +11,7 @@ class ProfileTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final User? user = FirebaseAuth.instance.currentUser;
     final AuthRepository repository = AuthRepository.instance;
-    final uid = user!.uid;
+    final _ = user!.uid;
     return ListView(
       key: const ValueKey('profile'),
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),

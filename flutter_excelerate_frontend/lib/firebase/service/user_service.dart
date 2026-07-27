@@ -22,7 +22,6 @@ class UserService {
       return;
     }
 
-    // New user - create profile
     await docRef.set({
       'uid': firebaseUser.uid,
       'name': firebaseUser.displayName,
@@ -43,6 +42,12 @@ class UserService {
     }
 
     return AppUser.fromFirestore(doc);
+  }
+
+  Future<String?> getUserRole(String uid) async {
+    final user = await getUser(uid);
+
+    return user?.role;
   }
 
   Stream<AppUser?> userStream(String uid) {

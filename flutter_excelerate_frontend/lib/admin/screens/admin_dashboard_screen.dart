@@ -1,7 +1,5 @@
 import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
-
-import '../../firebase/auth/admin_access.dart';
 import '../../firebase/service/repository.dart';
 import '../../models/learnify_models.dart';
 import '../../screens/notifications_screen.dart';
@@ -100,8 +98,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         activities: _activities,
         onAddActivity: _showActivityDialog,
       ),
-      AdminSettingsTab(adminEmails: AdminAccess.allowedEmails),
+      const AdminSettingsTab(adminEmails: {}),
     ];
+
+    final safeIndex = _selectedIndex.clamp(0, pages.length - 1);
 
     return ResponsiveScaffold(
       appBar: AppBar(
@@ -113,7 +113,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               color: LearnifyColors.secondary,
             ),
             const SizedBox(width: 8),
-            Text(_titleForIndex(_selectedIndex)),
+            Text(_titleForIndex(safeIndex)),
           ],
         ),
         actions: [
@@ -133,7 +133,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             child: GradientBlobBackground(
               child: PageTransitionSwitcher(
                 duration: const Duration(milliseconds: 350),
-                reverse: _selectedIndex < _previousIndex,
+                reverse: safeIndex < _previousIndex,
                 transitionBuilder:
                     (child, primaryAnimation, secondaryAnimation) {
                       return SharedAxisTransition(
@@ -144,7 +144,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         child: child,
                       );
                     },
-                child: pages[_selectedIndex],
+                child: pages[safeIndex],
               ),
             ),
           ),
