@@ -24,7 +24,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   int _selectedIndex = 0;
   int _previousIndex = 0;
 
-  late final List<Program> _programs = List.of(ProgramsScreen.programs);
+  late final List<Program> _programs = List.of();
   late final List<LearnifyNotification> _notifications = List.of(
     NotificationsScreen.notifications,
   );
@@ -151,7 +151,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           Positioned(
             left: 20,
             right: 20,
-            bottom: 24,
+            bottom: 5,
             child: FloatingGlassNavBar(
               selectedIndex: _selectedIndex,
               destinations: _navDestinations,

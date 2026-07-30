@@ -87,7 +87,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
           Positioned(
             left: 20,
             right: 20,
-            bottom: 24,
+            bottom: 5,
             child: FloatingGlassNavBar(
               selectedIndex: _selectedIndex,
               onDestinationSelected: _openTab,
