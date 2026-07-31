@@ -144,7 +144,10 @@ class _DailyPulseScreenState extends State<DailyPulseScreen> {
                       .map((tag) {
                         final isSelected = _selectedTags.contains(tag);
                         return FilterChip(
-                          label: Text(tag),
+                          label: Text(
+                            tag,
+                            style: TextStyle(color: Colors.black),
+                          ),
                           selected: isSelected,
                           onSelected: (selected) {
                             HapticFeedback.selectionClick();

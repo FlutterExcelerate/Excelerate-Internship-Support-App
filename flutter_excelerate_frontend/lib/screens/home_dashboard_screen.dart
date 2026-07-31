@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:animations/animations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_excelerate_frontend/screens/profile_screen.dart';
+import 'package:intl/intl.dart';
 
 import '../firebase/models/program_model.dart';
 import '../firebase/service/program_service.dart';
@@ -152,6 +153,7 @@ class _DashboardTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final deadlines = _ProgramDeadline.fromPrograms(courses);
 
     return ListView(
       key: const ValueKey('dashboard'),
@@ -249,39 +251,178 @@ class _DashboardTab extends StatelessWidget {
         const SizedBox(height: 14),
         _SectionHeader(
           title: 'Upcoming Deadlines',
-          action: 'Open',
-          onTap: () => onNavigate(2),
+          action: deadlines.isEmpty ? 'Programs' : 'View all',
+          onTap: () => onNavigate(1),
         ),
         const SizedBox(height: 10),
-        SectionCard(
-          onTap: () => onNavigate(2),
-          child: Row(
-            children: [
-              const IconBadge(
-                icon: Icons.assignment_late_outlined,
-                color: LearnifyColors.warning,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Assignment Due Tomorrow',
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    Text(
-                      'Flutter Sprint - Navigation patterns',
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ],
+        if (deadlines.isEmpty)
+          SectionCard(
+            child: Row(
+              children: [
+                const IconBadge(
+                  icon: Icons.event_available_outlined,
+                  color: LearnifyColors.success,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    'No upcoming program deadlines yet.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ...deadlines
+              .take(3)
+              .map(
+                (deadline) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _DeadlineTile(
+                    deadline: deadline,
+                    onTap: () => onTapCourse(deadline.program),
+                  ),
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded),
-            ],
-          ),
-        ),
       ],
+    );
+  }
+}
+
+class _ProgramDeadline {
+  const _ProgramDeadline({
+    required this.program,
+    required this.rawDate,
+    required this.parsedDate,
+  });
+
+  final ProgramModel program;
+  final String rawDate;
+  final DateTime? parsedDate;
+
+  static List<_ProgramDeadline> fromPrograms(List<ProgramModel> programs) {
+    final today = DateTime.now();
+    final startOfToday = DateTime(today.year, today.month, today.day);
+    final deadlines = programs
+        .where((program) => program.applicationDeadline.trim().isNotEmpty)
+        .map(
+          (program) => _ProgramDeadline(
+            program: program,
+            rawDate: program.applicationDeadline.trim(),
+            parsedDate: _parseDate(program.applicationDeadline.trim()),
+          ),
+        )
+        .where(
+          (deadline) =>
+              deadline.parsedDate == null ||
+              !deadline.parsedDate!.isBefore(startOfToday),
+        )
+        .toList();
+
+    deadlines.sort((a, b) {
+      if (a.parsedDate == null && b.parsedDate == null) {
+        return a.program.title.compareTo(b.program.title);
+      }
+      if (a.parsedDate == null) return 1;
+      if (b.parsedDate == null) return -1;
+      return a.parsedDate!.compareTo(b.parsedDate!);
+    });
+
+    return deadlines;
+  }
+
+  static DateTime? _parseDate(String value) {
+    final formats = [
+      DateFormat('yyyy-MM-dd'),
+      DateFormat('dd/MM/yyyy'),
+      DateFormat('MM/dd/yyyy'),
+      DateFormat('dd-MM-yyyy'),
+      DateFormat('MM-dd-yyyy'),
+      DateFormat('d MMM yyyy'),
+      DateFormat('MMM d, yyyy'),
+      DateFormat('MMMM d, yyyy'),
+    ];
+
+    for (final format in formats) {
+      try {
+        return format.parseStrict(value);
+      } catch (_) {}
+    }
+
+    return null;
+  }
+
+  String get label {
+    final date = parsedDate;
+    if (date == null) return rawDate;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dueDate = DateTime(date.year, date.month, date.day);
+    final days = dueDate.difference(today).inDays;
+
+    if (days == 0) return 'Due today';
+    if (days == 1) return 'Due tomorrow';
+    if (days < 7) return 'Due in $days days';
+    return 'Due ${DateFormat('MMM d, yyyy').format(date)}';
+  }
+}
+
+class _DeadlineTile extends StatelessWidget {
+  const _DeadlineTile({required this.deadline, required this.onTap});
+
+  final _ProgramDeadline deadline;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final programColor = Color(deadline.program.color);
+
+    return SectionCard(
+      onTap: onTap,
+      child: Row(
+        children: [
+          IconBadge(
+            icon: Icons.event_note_outlined,
+            color: deadline.parsedDate == null
+                ? LearnifyColors.info
+                : LearnifyColors.warning,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(deadline.label, style: theme.textTheme.titleMedium),
+                const SizedBox(height: 4),
+                Text(deadline.program.title, style: theme.textTheme.bodyMedium),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    Pill(
+                      label: deadline.program.category,
+                      icon: Icons.local_offer_outlined,
+                      color: programColor,
+                    ),
+                    if (deadline.program.mentorName.isNotEmpty)
+                      Pill(
+                        label: deadline.program.mentorName,
+                        icon: Icons.person_outline_rounded,
+                        color: LearnifyColors.info,
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          const Icon(Icons.chevron_right_rounded),
+        ],
+      ),
     );
   }
 }

@@ -4,13 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_excelerate_frontend/firebase/models/program_model.dart';
 import '../../firebase/models/module_model.dart';
 import '../../firebase/models/app_user.dart';
+import '../../firebase/models/daily_pulse_model.dart';
+import '../../firebase/service/daily_pulse_service.dart';
 import '../../firebase/service/module_service.dart';
 import '../../firebase/service/repository.dart';
 import '../../firebase/service/program_service.dart';
 import '../../firebase/service/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/learnify_widgets.dart';
-import '../models/admin_user_activity.dart';
 import '../tabs/admin_content_tab.dart';
 import '../tabs/admin_overview_tab.dart';
 import '../tabs/admin_settings_tab.dart';
@@ -31,29 +32,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   int _previousIndex = 0;
 
   final ProgramService _programService = ProgramService.instance;
-  final List<AdminUserActivity> _activities = [
-    const AdminUserActivity(
-      user: 'Aarav Sharma',
-      action: 'Completed Deadline Systems module',
-      status: 'Healthy',
-      time: '12 min ago',
-      color: LearnifyColors.success,
-    ),
-    const AdminUserActivity(
-      user: 'Maya Singh',
-      action: 'Missed Flutter Sprint submission',
-      status: 'Needs review',
-      time: '1h ago',
-      color: LearnifyColors.warning,
-    ),
-    const AdminUserActivity(
-      user: 'Rohan Mehta',
-      action: 'Joined Internship Readiness',
-      status: 'Active',
-      time: 'Today',
-      color: LearnifyColors.info,
-    ),
-  ];
 
   static const _navDestinations = [
     GlassNavDestination(
@@ -99,96 +77,105 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             return StreamBuilder<List<AppUser>>(
               stream: UserService.instance.usersStream(),
               builder: (context, userSnapshot) {
-                final users = userSnapshot.data ?? [];
-                final notifications = notificationSnapshot.data ?? [];
-                final programs = snapshot.data ?? [];
-                final pages = [
-                  AdminOverviewTab(
-                    programs: programs,
-                    notifications: notifications,
-                    users: users,
-                    activities: _activities,
-                    onAddProgram: () => _showProgramDialog(programs.length),
-                    onAddNotification: _showNotificationDialog,
-                    onOpenContent: () => _selectTab(1),
-                    onOpenUsers: () => _selectTab(2),
-                  ),
-                  AdminContentTab(
-                    programs: programs,
-                    notifications: notifications,
-                    onAddProgram: () => _showProgramDialog(programs.length),
-                    onAddModule: _showModuleDialog,
-                    onAddNotification: _showNotificationDialog,
-                  ),
-                  AdminUsersTab(
-                    users: users,
-                    activities: _activities,
-                    onAddActivity: _showActivityDialog,
-                    onEditUser: _showUserAdminDialog,
-                  ),
-                  const AdminSettingsTab(adminEmails: {}),
-                ];
-
-                final safeIndex = _selectedIndex.clamp(0, pages.length - 1);
-
-                return ResponsiveScaffold(
-                  appBar: AppBar(
-                    leadingWidth: 0,
-                    title: Row(
-                      children: [
-                        const Icon(
-                          Icons.admin_panel_settings_rounded,
-                          color: LearnifyColors.secondary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(_titleForIndex(safeIndex)),
-                      ],
-                    ),
-                    actions: [
-                      const ThemeToggleButton(),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        tooltip: 'Sign out',
-                        onPressed: () => AuthRepository.instance.signOut(),
-                        icon: const Icon(Icons.logout_rounded),
+                return StreamBuilder<List<DailyPulseModel>>(
+                  stream: DailyPulseService.instance.pulsesStream(),
+                  builder: (context, pulseSnapshot) {
+                    final users = userSnapshot.data ?? [];
+                    final pulses = pulseSnapshot.data ?? [];
+                    final notifications = notificationSnapshot.data ?? [];
+                    final programs = snapshot.data ?? [];
+                    final pages = [
+                      AdminOverviewTab(
+                        programs: programs,
+                        notifications: notifications,
+                        users: users,
+                        pulseCount: pulses.length,
+                        onAddProgram: () => _showProgramDialog(programs.length),
+                        onAddNotification: _showNotificationDialog,
+                        onOpenContent: () => _selectTab(1),
+                        onOpenUsers: () => _selectTab(2),
                       ),
-                      const SizedBox(width: 8),
-                    ],
-                  ),
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: GradientBlobBackground(
-                          child: PageTransitionSwitcher(
-                            duration: const Duration(milliseconds: 350),
-                            reverse: safeIndex < _previousIndex,
-                            transitionBuilder:
-                                (child, primaryAnimation, secondaryAnimation) {
-                                  return SharedAxisTransition(
-                                    animation: primaryAnimation,
-                                    secondaryAnimation: secondaryAnimation,
-                                    transitionType:
-                                        SharedAxisTransitionType.horizontal,
-                                    fillColor: Colors.transparent,
-                                    child: child,
-                                  );
-                                },
-                            child: pages[safeIndex],
+                      AdminContentTab(
+                        programs: programs,
+                        notifications: notifications,
+                        onAddProgram: () => _showProgramDialog(programs.length),
+                        onAddModule: _showModuleDialog,
+                        onAddNotification: _showNotificationDialog,
+                      ),
+                      AdminUsersTab(
+                        users: users,
+                        pulses: pulses,
+                        onEditUser: _showUserAdminDialog,
+                      ),
+                      const AdminSettingsTab(adminEmails: {}),
+                    ];
+
+                    final safeIndex = _selectedIndex.clamp(0, pages.length - 1);
+
+                    return ResponsiveScaffold(
+                      appBar: AppBar(
+                        leadingWidth: 0,
+                        title: Row(
+                          children: [
+                            const Icon(
+                              Icons.admin_panel_settings_rounded,
+                              color: LearnifyColors.secondary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(_titleForIndex(safeIndex)),
+                          ],
+                        ),
+                        actions: [
+                          const ThemeToggleButton(),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            tooltip: 'Sign out',
+                            onPressed: () => AuthRepository.instance.signOut(),
+                            icon: const Icon(Icons.logout_rounded),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                        ],
                       ),
-                      Positioned(
-                        left: 20,
-                        right: 20,
-                        bottom: 5,
-                        child: FloatingGlassNavBar(
-                          selectedIndex: _selectedIndex,
-                          destinations: _navDestinations,
-                          onDestinationSelected: _selectTab,
-                        ),
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: GradientBlobBackground(
+                              child: PageTransitionSwitcher(
+                                duration: const Duration(milliseconds: 350),
+                                reverse: safeIndex < _previousIndex,
+                                transitionBuilder:
+                                    (
+                                      child,
+                                      primaryAnimation,
+                                      secondaryAnimation,
+                                    ) {
+                                      return SharedAxisTransition(
+                                        animation: primaryAnimation,
+                                        secondaryAnimation: secondaryAnimation,
+                                        transitionType:
+                                            SharedAxisTransitionType.horizontal,
+                                        fillColor: Colors.transparent,
+                                        child: child,
+                                      );
+                                    },
+                                child: pages[safeIndex],
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            left: 20,
+                            right: 20,
+                            bottom: 5,
+                            child: FloatingGlassNavBar(
+                              selectedIndex: _selectedIndex,
+                              destinations: _navDestinations,
+                              onDestinationSelected: _selectTab,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 );
               },
             );
@@ -386,49 +373,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       await NotificationService.instance.addNotification(notification: added);
 
       _showSnack('${added.title} was published.');
-    }
-  }
-
-  Future<void> _showActivityDialog() async {
-    final added = await showDialog<AdminUserActivity>(
-      context: context,
-      builder: (context) => AdminFormDialog(
-        title: 'Log User Activity',
-        actionLabel: 'Log Activity',
-        fields: const [
-          ('User name', '', 1),
-          ('Activity', '', 3),
-          ('Status', 'Needs review', 1),
-        ],
-        onSubmit: (values) {
-          final user = values['User name'] ?? '';
-          final action = values['Activity'] ?? '';
-
-          if (user.isEmpty || action.isEmpty) {
-            _showSnack('User and activity are required.');
-            return;
-          }
-
-          Navigator.of(context).pop(
-            AdminUserActivity(
-              user: user,
-              action: action,
-              status: values['Status']!.isEmpty
-                  ? 'Needs review'
-                  : values['Status']!,
-              time: 'Just now',
-              color: LearnifyColors.warning,
-            ),
-          );
-        },
-      ),
-    );
-
-    if (!mounted) return;
-
-    if (added != null) {
-      setState(() => _activities.insert(0, added));
-      _showSnack('Activity was logged for ${added.user}.');
     }
   }
 

@@ -5,7 +5,6 @@ import 'package:flutter_excelerate_frontend/firebase/models/app_user.dart';
 import 'package:flutter_excelerate_frontend/firebase/models/program_model.dart';
 
 import '../../theme/app_theme.dart';
-import '../models/admin_user_activity.dart';
 import '../widgets/admin_widgets.dart';
 
 class AdminOverviewTab extends StatelessWidget {
@@ -14,7 +13,7 @@ class AdminOverviewTab extends StatelessWidget {
     required this.programs,
     required this.notifications,
     required this.users,
-    required this.activities,
+    required this.pulseCount,
     required this.onAddProgram,
     required this.onAddNotification,
     required this.onOpenContent,
@@ -24,7 +23,7 @@ class AdminOverviewTab extends StatelessWidget {
   final List<ProgramModel> programs;
   final List<NotificationModel> notifications;
   final List<AppUser> users;
-  final List<AdminUserActivity> activities;
+  final int pulseCount;
   final VoidCallback onAddProgram;
   final VoidCallback onAddNotification;
   final VoidCallback onOpenContent;
@@ -34,9 +33,10 @@ class AdminOverviewTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final completedModules = 0;
     final moduleCount = 0;
-    final reviewCount = activities
-        .where((item) => item.status.toLowerCase().contains('review'))
+    final studentCount = users
+        .where((user) => user.role.toLowerCase() != 'admin')
         .length;
+    final inactiveCount = users.where((user) => !user.isActive).length;
 
     return ListView(
       key: const ValueKey('admin-overview'),
@@ -73,8 +73,8 @@ class AdminOverviewTab extends StatelessWidget {
               ),
               AdminMetricCard(
                 title: 'Users',
-                value: '${users.length}',
-                subtitle: '$reviewCount activities need attention',
+                value: '$studentCount',
+                subtitle: '$inactiveCount inactive accounts',
                 icon: Icons.manage_accounts_outlined,
                 color: LearnifyColors.warning,
               ),
@@ -125,16 +125,15 @@ class AdminOverviewTab extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 18),
-        const AdminSectionTitle(title: 'Latest User Activity'),
+        const AdminSectionTitle(title: 'Live Activity Signals'),
         const SizedBox(height: 10),
-        ...activities
-            .take(3)
-            .map(
-              (activity) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: AdminActivityTile(activity: activity),
-              ),
-            ),
+        AdminMetricCard(
+          title: 'Daily Pulse',
+          value: '$pulseCount',
+          subtitle: 'Learner check-ins captured',
+          icon: Icons.favorite_outline_rounded,
+          color: LearnifyColors.wellness,
+        ),
       ],
     );
   }

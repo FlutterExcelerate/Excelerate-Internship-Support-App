@@ -1,23 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_excelerate_frontend/firebase/models/app_user.dart';
+import 'package:flutter_excelerate_frontend/firebase/models/daily_pulse_model.dart';
 
 import '../../theme/app_theme.dart';
 import '../../widgets/learnify_widgets.dart';
-import '../models/admin_user_activity.dart';
-import '../widgets/admin_widgets.dart';
 
 class AdminUsersTab extends StatefulWidget {
   const AdminUsersTab({
     super.key,
     required this.users,
-    required this.activities,
-    required this.onAddActivity,
+    required this.pulses,
     required this.onEditUser,
   });
 
   final List<AppUser> users;
-  final List<AdminUserActivity> activities;
-  final VoidCallback onAddActivity;
+  final List<DailyPulseModel> pulses;
   final ValueChanged<AppUser> onEditUser;
 
   @override
@@ -32,7 +29,7 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
     final studentUsers = widget.users
         .where((user) => user.role.toLowerCase() != 'admin')
         .toList();
-    final activityItems = _buildActivityItems(studentUsers, widget.activities);
+    final activityItems = _buildActivityItems(studentUsers, widget.pulses);
 
     return ListView(
       key: const ValueKey('admin-users'),
@@ -58,7 +55,6 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
               : _ActivityTimelineView(
                   key: const ValueKey('activity-timeline'),
                   activities: activityItems,
-                  onAddActivity: widget.onAddActivity,
                 ),
         ),
       ],
@@ -67,41 +63,87 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
 
   List<_ActivityItem> _buildActivityItems(
     List<AppUser> users,
-    List<AdminUserActivity> manualActivities,
+    List<DailyPulseModel> pulses,
   ) {
-    final items = <_ActivityItem>[
-      ...manualActivities.map(
-        (activity) => _ActivityItem(
-          title: activity.user,
-          detail: activity.action,
-          status: activity.status,
-          time: activity.time,
-          color: activity.color,
-          icon: Icons.person_search_outlined,
-        ),
-      ),
-      ...users.map((user) {
-        final hasRecentLogin = user.lastLogin != null;
-        return _ActivityItem(
-          title: user.name.isEmpty ? user.email : user.name,
-          detail: hasRecentLogin
-              ? 'Signed in to Learnify'
-              : 'Joined Learnify workspace',
-          status: user.isActive ? 'Active' : 'Inactive',
-          time: hasRecentLogin
-              ? _timeAgo(user.lastLogin!)
-              : _timeAgo(user.createdAt),
-          color: user.isActive
-              ? LearnifyColors.success
-              : LearnifyColors.warning,
-          icon: hasRecentLogin
-              ? Icons.login_rounded
-              : Icons.person_add_alt_1_outlined,
-        );
-      }),
-    ];
+    final usersById = {for (final user in users) user.uid: user};
+    final items = <_ActivityItem>[];
 
+    for (final user in users) {
+      if (user.createdAt != null) {
+        items.add(
+          _ActivityItem(
+            title: _displayName(user),
+            detail: 'Joined Learnify workspace',
+            status: user.isActive ? 'Active' : 'Inactive',
+            time: _timeAgo(user.createdAt),
+            sortAt: user.createdAt!,
+            color: user.isActive
+                ? LearnifyColors.success
+                : LearnifyColors.warning,
+            icon: Icons.person_add_alt_1_outlined,
+          ),
+        );
+      }
+
+      if (user.lastLogin != null &&
+          !_isSameMinute(user.createdAt, user.lastLogin)) {
+        items.add(
+          _ActivityItem(
+            title: _displayName(user),
+            detail: 'Signed in to Learnify',
+            status: user.isActive ? 'Active' : 'Inactive',
+            time: _timeAgo(user.lastLogin),
+            sortAt: user.lastLogin!,
+            color: user.isActive
+                ? LearnifyColors.success
+                : LearnifyColors.warning,
+            icon: Icons.login_rounded,
+          ),
+        );
+      }
+    }
+
+    for (final pulse in pulses) {
+      final user = usersById[pulse.userId];
+      if (user == null) continue;
+
+      final details = [
+        'Submitted Daily Pulse: ${pulse.moodLabel}',
+        if (pulse.tags.isNotEmpty) pulse.tags.join(', '),
+      ].join(' • ');
+
+      items.add(
+        _ActivityItem(
+          title: _displayName(user),
+          detail: details,
+          status: pulse.moodLabel,
+          time: _timeAgo(pulse.createdAt.toDate()),
+          sortAt: pulse.createdAt.toDate(),
+          color: _pulseColor(pulse.mood),
+          icon: Icons.favorite_outline_rounded,
+        ),
+      );
+    }
+
+    items.sort((a, b) => b.sortAt.compareTo(a.sortAt));
     return items;
+  }
+
+  bool _isSameMinute(DateTime? first, DateTime? second) {
+    if (first == null || second == null) return false;
+
+    return first.difference(second).abs().inMinutes < 1;
+  }
+
+  String _displayName(AppUser user) {
+    return user.name.isEmpty ? user.email : user.name;
+  }
+
+  Color _pulseColor(int mood) {
+    if (mood <= 1) return LearnifyColors.warning;
+    if (mood == 2) return LearnifyColors.wellness;
+    if (mood == 3) return LearnifyColors.info;
+    return LearnifyColors.success;
   }
 
   String _timeAgo(DateTime? date) {
@@ -298,23 +340,28 @@ class _UsersListView extends StatelessWidget {
 }
 
 class _ActivityTimelineView extends StatelessWidget {
-  const _ActivityTimelineView({
-    super.key,
-    required this.activities,
-    required this.onAddActivity,
-  });
+  const _ActivityTimelineView({super.key, required this.activities});
 
   final List<_ActivityItem> activities;
-  final VoidCallback onAddActivity;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        AdminSectionTitle(
-          title: 'User Activity',
-          action: 'Log',
-          onTap: onAddActivity,
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'User Activity',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            const Pill(
+              label: 'Live',
+              icon: Icons.bolt_outlined,
+              color: LearnifyColors.success,
+            ),
+          ],
         ),
         const SizedBox(height: 10),
         if (activities.isEmpty)
@@ -341,6 +388,7 @@ class _ActivityItem {
     required this.detail,
     required this.status,
     required this.time,
+    required this.sortAt,
     required this.color,
     required this.icon,
   });
@@ -349,6 +397,7 @@ class _ActivityItem {
   final String detail;
   final String status;
   final String time;
+  final DateTime sortAt;
   final Color color;
   final IconData icon;
 }
