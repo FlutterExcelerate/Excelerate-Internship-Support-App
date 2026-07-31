@@ -41,6 +41,7 @@ dependencies:
   google_sign_in: ^6.2.0
   rounded_loading_button_plus: ^3.0.1
   cloud_firestore: ^6.7.1
+  intl: ^0.20.3
 
 dev_dependencies:
   flutter_test:

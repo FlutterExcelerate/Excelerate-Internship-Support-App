@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_excelerate_frontend/firebase/models/user_role.dart';
 
 class AdminService {
@@ -21,7 +22,9 @@ class AdminService {
     try {
       return await _adminConfig.doc('access').get();
     } on FirebaseException catch (e) {
-      print("Firestore permission error fetching admin config: ${e.message}");
+      debugPrint(
+        "Firestore permission error fetching admin config: ${e.message}",
+      );
       return null;
     }
   }
@@ -66,7 +69,7 @@ class AdminService {
 
       return true;
     } on FirebaseException catch (e) {
-      print("Firestore error during admin login: ${e.message}");
+      debugPrint("Firestore error during admin login: ${e.message}");
       rethrow;
     }
   }

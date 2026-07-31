@@ -29,6 +29,13 @@ class UserService {
       'photo': firebaseUser.photoURL,
       'role': 'student',
       'isActive': true,
+      'phone': '',
+      'cohort': '',
+      'location': '',
+      'headline': '',
+      'skills': <String>[],
+      'adminDepartment': '',
+      'adminAccessLevel': 'standard',
       'createdAt': FieldValue.serverTimestamp(),
       'lastLogin': FieldValue.serverTimestamp(),
     });
@@ -56,6 +63,43 @@ class UserService {
         return null;
       }
       return AppUser.fromFirestore(doc);
+    });
+  }
+
+  Stream<List<AppUser>> usersStream() {
+    return _users
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map(AppUser.fromFirestore).toList());
+  }
+
+  Future<void> updateUserProfile(AppUser user) async {
+    await _users.doc(user.uid).update({
+      'name': user.name,
+      'phone': user.phone,
+      'cohort': user.cohort,
+      'location': user.location,
+      'headline': user.headline,
+      'skills': user.skills,
+      'adminDepartment': user.adminDepartment,
+      'adminAccessLevel': user.adminAccessLevel,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> updateUserAdminFields({
+    required String uid,
+    required String role,
+    required bool isActive,
+    required String adminDepartment,
+    required String adminAccessLevel,
+  }) async {
+    await _users.doc(uid).update({
+      'role': role,
+      'isActive': isActive,
+      'adminDepartment': adminDepartment,
+      'adminAccessLevel': adminAccessLevel,
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 }

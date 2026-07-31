@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../models/learnify_models.dart';
+import '../firebase/models/module_model.dart';
+import '../firebase/models/program_model.dart';
+import '../firebase/service/module_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/learnify_widgets.dart';
 
 class ProgramDetailsScreen extends StatelessWidget {
   const ProgramDetailsScreen({super.key, required this.program});
 
-  final Program program;
+  final ProgramModel program;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final programColor = Color(program.color);
 
     return DefaultTabController(
       length: 4,
@@ -56,8 +59,12 @@ class ProgramDetailsScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              program.color.withValues(alpha: isDark ? 0.22 : 0.12),
-                              theme.colorScheme.secondary.withValues(alpha: isDark ? 0.18 : 0.08),
+                              programColor.withValues(
+                                alpha: isDark ? 0.22 : 0.12,
+                              ),
+                              theme.colorScheme.secondary.withValues(
+                                alpha: isDark ? 0.18 : 0.08,
+                              ),
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
@@ -69,7 +76,7 @@ class ProgramDetailsScreen extends StatelessWidget {
                         top: -30,
                         child: IconBadge(
                           icon: Icons.school_rounded,
-                          color: program.color,
+                          color: programColor,
                           size: 140,
                         ),
                       ),
@@ -79,9 +86,11 @@ class ProgramDetailsScreen extends StatelessWidget {
                 bottom: TabBar(
                   isScrollable: true,
                   tabAlignment: TabAlignment.start,
-                  indicatorColor: program.color,
+                  indicatorColor: programColor,
                   labelColor: theme.colorScheme.onSurface,
-                  unselectedLabelColor: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  unselectedLabelColor: theme.colorScheme.onSurface.withValues(
+                    alpha: 0.6,
+                  ),
                   tabs: const [
                     Tab(text: 'Overview'),
                     Tab(text: 'Modules'),
@@ -92,13 +101,27 @@ class ProgramDetailsScreen extends StatelessWidget {
               ),
             ];
           },
-          body: TabBarView(
-            children: [
-              _OverviewTab(program: program),
-              _ModulesTab(program: program),
-              _AnalyticsTab(program: program),
-              _CertificatesTab(program: program),
-            ],
+          body: StreamBuilder<List<ModuleModel>>(
+            stream: ModuleService.instance.modulesStream(program.id),
+            builder: (context, snapshot) {
+              final modules = snapshot.data ?? [];
+              final progress = modules.isEmpty
+                  ? 0.0
+                  : modules.where((m) => m.isComplete).length / modules.length;
+
+              return TabBarView(
+                children: [
+                  _OverviewTab(
+                    program: program,
+                    modules: modules,
+                    progress: progress,
+                  ),
+                  _ModulesTab(program: program, modules: modules),
+                  _AnalyticsTab(program: program, progress: progress),
+                  _CertificatesTab(program: program, progress: progress),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -107,13 +130,20 @@ class ProgramDetailsScreen extends StatelessWidget {
 }
 
 class _OverviewTab extends StatelessWidget {
-  const _OverviewTab({required this.program});
+  const _OverviewTab({
+    required this.program,
+    required this.modules,
+    required this.progress,
+  });
 
-  final Program program;
+  final ProgramModel program;
+  final List<ModuleModel> modules;
+  final double progress;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final programColor = Color(program.color);
 
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -131,7 +161,7 @@ class _OverviewTab extends StatelessWidget {
                     children: [
                       IconBadge(
                         icon: Icons.school_outlined,
-                        color: program.color,
+                        color: programColor,
                         size: 64,
                       ),
                       const SizedBox(width: 16),
@@ -159,20 +189,54 @@ class _OverviewTab extends StatelessWidget {
                     children: [
                       Text('Progress', style: theme.textTheme.titleMedium),
                       Text(
-                        '${(program.progress * 100).round()}%',
-                        style: theme.textTheme.titleMedium?.copyWith(color: program.color),
+                        '${(progress * 100).round()}%',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: programColor,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
                   LinearProgressIndicator(
-                    value: program.progress,
+                    value: progress,
                     minHeight: 8,
                     borderRadius: BorderRadius.circular(99),
-                    color: program.color,
+                    color: programColor,
                     backgroundColor: theme.brightness == Brightness.light
                         ? const Color(0xFFE2E8F0)
                         : const Color(0xFF1E293B),
+                  ),
+                  const SizedBox(height: 18),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      Pill(
+                        label: program.level,
+                        icon: Icons.trending_up_rounded,
+                        color: programColor,
+                      ),
+                      Pill(
+                        label: program.duration,
+                        icon: Icons.schedule_outlined,
+                        color: LearnifyColors.info,
+                      ),
+                      if (program.capacity > 0)
+                        Pill(
+                          label: '${program.capacity} seats',
+                          icon: Icons.event_seat_outlined,
+                          color: LearnifyColors.secondary,
+                        ),
+                      Pill(
+                        label: program.isPublished ? 'Published' : 'Draft',
+                        icon: program.isPublished
+                            ? Icons.public_rounded
+                            : Icons.drafts_outlined,
+                        color: program.isPublished
+                            ? LearnifyColors.success
+                            : LearnifyColors.warning,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 24),
                   SizedBox(
@@ -181,7 +245,9 @@ class _OverviewTab extends StatelessWidget {
                       onPressed: () {
                         Feedback.forTap(context);
                       },
-                      style: FilledButton.styleFrom(backgroundColor: program.color),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: programColor,
+                      ),
                       icon: const Icon(Icons.play_arrow_rounded),
                       label: const Text('Enroll / Continue'),
                     ),
@@ -215,23 +281,169 @@ class _OverviewTab extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 14),
+        SectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Program Details', style: theme.textTheme.titleLarge),
+              const SizedBox(height: 12),
+              _DetailRow(
+                icon: Icons.person_outline_rounded,
+                label: 'Mentor',
+                value: program.mentorName.isEmpty
+                    ? 'To be assigned'
+                    : program.mentorName,
+              ),
+              _DetailRow(
+                icon: Icons.mail_outline_rounded,
+                label: 'Contact',
+                value: program.mentorEmail.isEmpty
+                    ? 'Not added'
+                    : program.mentorEmail,
+              ),
+              _DetailRow(
+                icon: Icons.event_outlined,
+                label: 'Deadline',
+                value: program.applicationDeadline.isEmpty
+                    ? 'Rolling admission'
+                    : program.applicationDeadline,
+              ),
+              _DetailRow(
+                icon: Icons.calendar_month_outlined,
+                label: 'Schedule',
+                value: program.schedule.isEmpty ? 'Flexible' : program.schedule,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        if (program.outcomes.isNotEmpty)
+          _BulletCard(
+            title: 'Outcomes',
+            icon: Icons.flag_outlined,
+            color: LearnifyColors.success,
+            items: program.outcomes,
+          ),
+        if (program.prerequisites.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          _BulletCard(
+            title: 'Prerequisites',
+            icon: Icons.fact_check_outlined,
+            color: LearnifyColors.secondary,
+            items: program.prerequisites,
+          ),
+        ],
       ],
     );
   }
 }
 
-class _ModulesTab extends StatelessWidget {
-  const _ModulesTab({required this.program});
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
-  final Program program;
+  final IconData icon;
+  final String label;
+  final String value;
 
   @override
   Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: LearnifyColors.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          ),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BulletCard extends StatelessWidget {
+  const _BulletCard({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.items,
+  });
+
+  final String title;
+  final IconData icon;
+  final Color color;
+  final List<String> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              IconBadge(icon: icon, color: color, size: 42),
+              const SizedBox(width: 12),
+              Text(title, style: Theme.of(context).textTheme.titleLarge),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...items.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.check_rounded, size: 18, color: color),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      item,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModulesTab extends StatelessWidget {
+  const _ModulesTab({required this.program, required this.modules});
+
+  final ProgramModel program;
+  final List<ModuleModel> modules;
+
+  @override
+  Widget build(BuildContext context) {
+    if (modules.isEmpty) {
+      return const Center(child: Text('No modules added yet.'));
+    }
+
+    final programColor = Color(program.color);
+
     return ListView.builder(
       padding: const EdgeInsets.all(20),
-      itemCount: program.modules.length,
+      itemCount: modules.length,
       itemBuilder: (context, index) {
-        final module = program.modules[index];
+        final module = modules[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: SectionCard(
@@ -243,7 +455,7 @@ class _ModulesTab extends StatelessWidget {
                       : Icons.play_circle_outline_rounded,
                   color: module.isComplete
                       ? LearnifyColors.success
-                      : program.color,
+                      : programColor,
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -280,12 +492,15 @@ class _ModulesTab extends StatelessWidget {
 }
 
 class _AnalyticsTab extends StatelessWidget {
-  const _AnalyticsTab({required this.program});
+  const _AnalyticsTab({required this.program, required this.progress});
 
-  final Program program;
+  final ProgramModel program;
+  final double progress;
 
   @override
   Widget build(BuildContext context) {
+    final programColor = Color(program.color);
+
     return GridView.count(
       padding: const EdgeInsets.all(20),
       crossAxisCount: MediaQuery.sizeOf(context).width > 640 ? 3 : 2,
@@ -295,9 +510,9 @@ class _AnalyticsTab extends StatelessWidget {
       children: [
         _MetricCard(
           label: 'Completion',
-          value: '${(program.progress * 100).round()}%',
+          value: '${(progress * 100).round()}%',
           icon: Icons.insights_rounded,
-          color: program.color,
+          color: programColor,
         ),
         const _MetricCard(
           label: 'Assignments',
@@ -357,15 +572,17 @@ class _MetricCard extends StatelessWidget {
 }
 
 class _CertificatesTab extends StatelessWidget {
-  const _CertificatesTab({required this.program});
+  const _CertificatesTab({required this.program, required this.progress});
 
-  final Program program;
+  final ProgramModel program;
+  final double progress;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final isReady = program.progress >= 1.0;
+    final isReady = progress >= 1.0;
+    final programColor = Color(program.color);
 
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -376,7 +593,9 @@ class _CertificatesTab extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFFFBBF24).withValues(alpha: isDark ? 0.15 : 0.08),
+                  const Color(
+                    0xFFFBBF24,
+                  ).withValues(alpha: isDark ? 0.15 : 0.08),
                   const Color(0xFFD97706).withValues(alpha: isDark ? 0.2 : 0.1),
                 ],
                 begin: Alignment.topLeft,
@@ -389,7 +608,9 @@ class _CertificatesTab extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFFBBF24).withValues(alpha: isDark ? 0.05 : 0.1),
+                  color: const Color(
+                    0xFFFBBF24,
+                  ).withValues(alpha: isDark ? 0.05 : 0.1),
                   blurRadius: 32,
                   offset: const Offset(0, 16),
                 ),
@@ -428,7 +649,7 @@ class _CertificatesTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Guest Learner',
+                  'Learner',
                   style: theme.textTheme.headlineMedium?.copyWith(
                     fontFamily: 'serif',
                     fontWeight: FontWeight.w700,
@@ -444,7 +665,7 @@ class _CertificatesTab extends StatelessWidget {
                   program.title,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.titleLarge?.copyWith(
-                    color: program.color,
+                    color: programColor,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -478,10 +699,7 @@ class _CertificatesTab extends StatelessWidget {
                   size: 72,
                 ),
                 const SizedBox(height: 18),
-                Text(
-                  'Certificate Locked',
-                  style: theme.textTheme.titleLarge,
-                ),
+                Text('Certificate Locked', style: theme.textTheme.titleLarge),
                 const SizedBox(height: 8),
                 Text(
                   'Complete all modules and assignments in ${program.title} to unlock your certificate.',
@@ -494,7 +712,8 @@ class _CertificatesTab extends StatelessWidget {
                   child: FilledButton(
                     onPressed: null,
                     style: FilledButton.styleFrom(
-                      disabledBackgroundColor: theme.brightness == Brightness.light
+                      disabledBackgroundColor:
+                          theme.brightness == Brightness.light
                           ? const Color(0xFFE2E8F0)
                           : const Color(0xFF1E293B),
                     ),

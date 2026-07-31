@@ -1,9 +1,13 @@
 import 'package:animations/animations.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_excelerate_frontend/firebase/models/program_model.dart';
+import '../../firebase/models/module_model.dart';
+import '../../firebase/models/app_user.dart';
+import '../../firebase/service/module_service.dart';
 import '../../firebase/service/repository.dart';
-import '../../models/learnify_models.dart';
-import '../../screens/notifications_screen.dart';
-import '../../screens/programs_screen.dart';
+import '../../firebase/service/program_service.dart';
+import '../../firebase/service/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/learnify_widgets.dart';
 import '../models/admin_user_activity.dart';
@@ -12,6 +16,8 @@ import '../tabs/admin_overview_tab.dart';
 import '../tabs/admin_settings_tab.dart';
 import '../tabs/admin_users_tab.dart';
 import '../widgets/admin_widgets.dart';
+import '../../firebase/models/notification_model.dart';
+import '../../firebase/service/notification_service.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -24,10 +30,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   int _selectedIndex = 0;
   int _previousIndex = 0;
 
-  late final List<Program> _programs = List.of();
-  late final List<LearnifyNotification> _notifications = List.of(
-    NotificationsScreen.notifications,
-  );
+  final ProgramService _programService = ProgramService.instance;
   final List<AdminUserActivity> _activities = [
     const AdminUserActivity(
       user: 'Aarav Sharma',
@@ -77,89 +80,121 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final pages = [
-      AdminOverviewTab(
-        programs: _programs,
-        notifications: _notifications,
-        activities: _activities,
-        onAddProgram: _showProgramDialog,
-        onAddNotification: _showNotificationDialog,
-        onOpenContent: () => _selectTab(1),
-        onOpenUsers: () => _selectTab(2),
-      ),
-      AdminContentTab(
-        programs: _programs,
-        notifications: _notifications,
-        onAddProgram: _showProgramDialog,
-        onAddModule: _showModuleDialog,
-        onAddNotification: _showNotificationDialog,
-      ),
-      AdminUsersTab(
-        activities: _activities,
-        onAddActivity: _showActivityDialog,
-      ),
-      const AdminSettingsTab(adminEmails: {}),
-    ];
+    return StreamBuilder<List<ProgramModel>>(
+      stream: _programService.programsStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-    final safeIndex = _selectedIndex.clamp(0, pages.length - 1);
+        if (snapshot.hasError) {
+          return Scaffold(body: Center(child: Text(snapshot.error.toString())));
+        }
 
-    return ResponsiveScaffold(
-      appBar: AppBar(
-        leadingWidth: 0,
-        title: Row(
-          children: [
-            const Icon(
-              Icons.admin_panel_settings_rounded,
-              color: LearnifyColors.secondary,
-            ),
-            const SizedBox(width: 8),
-            Text(_titleForIndex(safeIndex)),
-          ],
-        ),
-        actions: [
-          const ThemeToggleButton(),
-          const SizedBox(width: 8),
-          IconButton(
-            tooltip: 'Sign out',
-            onPressed: () => AuthRepository.instance.signOut(),
-            icon: const Icon(Icons.logout_rounded),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: GradientBlobBackground(
-              child: PageTransitionSwitcher(
-                duration: const Duration(milliseconds: 350),
-                reverse: safeIndex < _previousIndex,
-                transitionBuilder:
-                    (child, primaryAnimation, secondaryAnimation) {
-                      return SharedAxisTransition(
-                        animation: primaryAnimation,
-                        secondaryAnimation: secondaryAnimation,
-                        transitionType: SharedAxisTransitionType.horizontal,
-                        fillColor: Colors.transparent,
-                        child: child,
-                      );
-                    },
-                child: pages[safeIndex],
-              ),
-            ),
-          ),
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: 5,
-            child: FloatingGlassNavBar(
-              selectedIndex: _selectedIndex,
-              destinations: _navDestinations,
-              onDestinationSelected: _selectTab,
-            ),
-          ),
-        ],
-      ),
+        return StreamBuilder<List<NotificationModel>>(
+          stream: NotificationService.instance.notificationsStream(),
+          builder: (context, notificationSnapshot) {
+            return StreamBuilder<List<AppUser>>(
+              stream: UserService.instance.usersStream(),
+              builder: (context, userSnapshot) {
+                final users = userSnapshot.data ?? [];
+                final notifications = notificationSnapshot.data ?? [];
+                final programs = snapshot.data ?? [];
+                final pages = [
+                  AdminOverviewTab(
+                    programs: programs,
+                    notifications: notifications,
+                    users: users,
+                    activities: _activities,
+                    onAddProgram: () => _showProgramDialog(programs.length),
+                    onAddNotification: _showNotificationDialog,
+                    onOpenContent: () => _selectTab(1),
+                    onOpenUsers: () => _selectTab(2),
+                  ),
+                  AdminContentTab(
+                    programs: programs,
+                    notifications: notifications,
+                    onAddProgram: () => _showProgramDialog(programs.length),
+                    onAddModule: _showModuleDialog,
+                    onAddNotification: _showNotificationDialog,
+                  ),
+                  AdminUsersTab(
+                    users: users,
+                    activities: _activities,
+                    onAddActivity: _showActivityDialog,
+                    onEditUser: _showUserAdminDialog,
+                  ),
+                  const AdminSettingsTab(adminEmails: {}),
+                ];
+
+                final safeIndex = _selectedIndex.clamp(0, pages.length - 1);
+
+                return ResponsiveScaffold(
+                  appBar: AppBar(
+                    leadingWidth: 0,
+                    title: Row(
+                      children: [
+                        const Icon(
+                          Icons.admin_panel_settings_rounded,
+                          color: LearnifyColors.secondary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(_titleForIndex(safeIndex)),
+                      ],
+                    ),
+                    actions: [
+                      const ThemeToggleButton(),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        tooltip: 'Sign out',
+                        onPressed: () => AuthRepository.instance.signOut(),
+                        icon: const Icon(Icons.logout_rounded),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                  ),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: GradientBlobBackground(
+                          child: PageTransitionSwitcher(
+                            duration: const Duration(milliseconds: 350),
+                            reverse: safeIndex < _previousIndex,
+                            transitionBuilder:
+                                (child, primaryAnimation, secondaryAnimation) {
+                                  return SharedAxisTransition(
+                                    animation: primaryAnimation,
+                                    secondaryAnimation: secondaryAnimation,
+                                    transitionType:
+                                        SharedAxisTransitionType.horizontal,
+                                    fillColor: Colors.transparent,
+                                    child: child,
+                                  );
+                                },
+                            child: pages[safeIndex],
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 20,
+                        right: 20,
+                        bottom: 5,
+                        child: FloatingGlassNavBar(
+                          selectedIndex: _selectedIndex,
+                          destinations: _navDestinations,
+                          onDestinationSelected: _selectTab,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 
@@ -177,268 +212,260 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     });
   }
 
-  Future<void> _showProgramDialog() async {
-    final titleController = TextEditingController();
-    final categoryController = TextEditingController(text: 'Course');
-    final durationController = TextEditingController(text: '4 weeks');
-    final levelController = TextEditingController(text: 'Beginner');
-    final descriptionController = TextEditingController();
+  Future<void> _showProgramDialog(int currentProgramCount) async {
+    final added = await showDialog<ProgramModel>(
+      context: context,
+      builder: (context) => AdminFormDialog(
+        title: 'Add Program',
+        actionLabel: 'Add Program',
+        fields: const [
+          ('Title', '', 1),
+          ('Category', 'Course', 1),
+          ('Duration', '4 weeks', 1),
+          ('Level', 'Beginner', 1),
+          ('Mentor name', '', 1),
+          ('Mentor email', '', 1),
+          ('Application deadline', '', 1),
+          ('Schedule', 'Flexible', 1),
+          ('Capacity', '30', 1),
+          ('Outcomes, comma separated', '', 2),
+          ('Prerequisites, comma separated', '', 2),
+          ('Description', '', 3),
+        ],
+        onSubmit: (values) {
+          final title = values['Title'] ?? '';
+          final description = values['Description'] ?? '';
+          final mentorName = values['Mentor name'] ?? '';
+          final mentorEmail = values['Mentor email'] ?? '';
 
-    try {
-      final added = await showDialog<Program>(
-        context: context,
-        builder: (context) => AdminFormDialog(
-          title: 'Add Program',
-          actionLabel: 'Add Program',
-          children: [
-            AdminTextField(controller: titleController, label: 'Title'),
-            AdminTextField(controller: categoryController, label: 'Category'),
-            AdminTextField(controller: durationController, label: 'Duration'),
-            AdminTextField(controller: levelController, label: 'Level'),
-            AdminTextField(
-              controller: descriptionController,
-              label: 'Description',
-              maxLines: 3,
-            ),
-          ],
-          onSubmit: () {
-            final title = titleController.text.trim();
-            final description = descriptionController.text.trim();
-
-            if (title.isEmpty || description.isEmpty) {
-              _showSnack('Program title and description are required.');
-              return;
-            }
-
-            Navigator.of(context).pop(
-              Program(
-                title: title,
-                category: categoryController.text.trim().isEmpty
-                    ? 'Course'
-                    : categoryController.text.trim(),
-                description: description,
-                duration: durationController.text.trim().isEmpty
-                    ? '4 weeks'
-                    : durationController.text.trim(),
-                level: levelController.text.trim().isEmpty
-                    ? 'Beginner'
-                    : levelController.text.trim(),
-                progress: 0,
-                color: _colorForIndex(_programs.length),
-                modules: const [],
-              ),
+          if (title.isEmpty ||
+              description.isEmpty ||
+              mentorName.isEmpty ||
+              mentorEmail.isEmpty) {
+            _showSnack(
+              'Title, description, mentor name, and mentor email are required.',
             );
-          },
-        ),
-      );
+            return;
+          }
+          final capacity = int.tryParse(values['Capacity'] ?? '') ?? 0;
+          Navigator.of(context).pop(
+            ProgramModel(
+              id: '',
+              title: title,
+              description: description,
+              category: values['Category']!.isEmpty
+                  ? 'Course'
+                  : values['Category']!,
+              duration: values['Duration']!.isEmpty
+                  ? '4 weeks'
+                  : values['Duration']!,
+              level: values['Level']!.isEmpty ? 'Beginner' : values['Level']!,
+              imageUrl: '',
+              mentorName: mentorName,
+              mentorEmail: mentorEmail,
+              applicationDeadline: values['Application deadline'] ?? '',
+              schedule: values['Schedule']!.isEmpty
+                  ? 'Flexible'
+                  : values['Schedule']!,
+              capacity: capacity,
+              outcomes: _splitList(values['Outcomes, comma separated'] ?? ''),
+              prerequisites: _splitList(
+                values['Prerequisites, comma separated'] ?? '',
+              ),
+              color: _colorForIndex(currentProgramCount).toARGB32(),
+              isPublished: true,
+              createdBy: '',
+              createdAt: Timestamp.now(),
+              updatedAt: Timestamp.now(),
+            ),
+          );
+        },
+      ),
+    );
 
-      if (!mounted) {
-        return;
-      }
+    if (!mounted) return;
 
-      if (added != null) {
-        setState(() => _programs.insert(0, added));
-        _showSnack('${added.title} was added.');
-      }
-    } finally {
-      titleController.dispose();
-      categoryController.dispose();
-      durationController.dispose();
-      levelController.dispose();
-      descriptionController.dispose();
+    if (added != null) {
+      await ProgramService.instance.addProgram(program: added);
+      _showSnack('Program added successfully.');
     }
   }
 
-  Future<void> _showModuleDialog(Program program) async {
-    final titleController = TextEditingController();
-    final summaryController = TextEditingController();
-    final durationController = TextEditingController(text: '30 min');
-
-    try {
-      final added = await showDialog<ProgramModule>(
-        context: context,
-        builder: (context) => AdminFormDialog(
-          title: 'Add Module',
-          actionLabel: 'Add Module',
-          children: [
-            Text(program.title, style: Theme.of(context).textTheme.bodyMedium),
-            AdminTextField(controller: titleController, label: 'Module title'),
-            AdminTextField(
-              controller: summaryController,
-              label: 'Summary',
-              maxLines: 3,
-            ),
-            AdminTextField(controller: durationController, label: 'Duration'),
-          ],
-          onSubmit: () {
-            final title = titleController.text.trim();
-            final summary = summaryController.text.trim();
-
-            if (title.isEmpty || summary.isEmpty) {
-              _showSnack('Module title and summary are required.');
-              return;
-            }
-
-            Navigator.of(context).pop(
-              ProgramModule(
-                title: title,
-                summary: summary,
-                duration: durationController.text.trim().isEmpty
-                    ? '30 min'
-                    : durationController.text.trim(),
-                isComplete: false,
-              ),
-            );
-          },
+  Future<void> _showModuleDialog(ProgramModel program) async {
+    final added = await showDialog<ModuleModel>(
+      context: context,
+      builder: (context) => AdminFormDialog(
+        title: 'Add Module',
+        actionLabel: 'Add Module',
+        headerWidget: Text(
+          program.title,
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
+        fields: const [
+          ('Module title', '', 1),
+          ('Summary', '', 3),
+          ('Duration', '30 min', 1),
+        ],
+        onSubmit: (values) {
+          final title = values['Module title'] ?? '';
+          final summary = values['Summary'] ?? '';
+
+          if (title.isEmpty || summary.isEmpty) {
+            _showSnack('Module title and summary are required.');
+            return;
+          }
+
+          Navigator.of(context).pop(
+            ModuleModel(
+              id: '',
+              title: title,
+              summary: summary,
+              duration: values['Duration']!.isEmpty
+                  ? '30 min'
+                  : values['Duration']!,
+              isComplete: false,
+              createdAt: Timestamp.now(),
+              updatedAt: Timestamp.now(),
+            ),
+          );
+        },
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (added != null) {
+      await ModuleService.instance.addModule(
+        programId: program.id,
+        module: added,
       );
-
-      if (!mounted) {
-        return;
-      }
-
-      if (added != null) {
-        final index = _programs.indexOf(program);
-        final updated = Program(
-          title: program.title,
-          category: program.category,
-          description: program.description,
-          duration: program.duration,
-          level: program.level,
-          progress: program.progress,
-          color: program.color,
-          modules: [...program.modules, added],
-        );
-
-        if (index >= 0) {
-          setState(() => _programs[index] = updated);
-          _showSnack('${added.title} was added to ${program.title}.');
-        }
-      }
-    } finally {
-      titleController.dispose();
-      summaryController.dispose();
-      durationController.dispose();
+      _showSnack('${added.title} was added to ${program.title}.');
     }
   }
 
   Future<void> _showNotificationDialog() async {
-    final titleController = TextEditingController();
-    final messageController = TextEditingController();
-    final categoryController = TextEditingController(text: 'Announcements');
+    final added = await showDialog<NotificationModel>(
+      context: context,
+      builder: (context) => AdminFormDialog(
+        title: 'Add Notification',
+        actionLabel: 'Publish',
+        fields: const [
+          ('Title', '', 1),
+          ('Category', 'Announcements', 1),
+          ('Message', '', 4),
+        ],
+        onSubmit: (values) {
+          final title = values['Title'] ?? '';
+          final message = values['Message'] ?? '';
 
-    try {
-      final added = await showDialog<LearnifyNotification>(
-        context: context,
-        builder: (context) => AdminFormDialog(
-          title: 'Add Notification',
-          actionLabel: 'Publish',
-          children: [
-            AdminTextField(controller: titleController, label: 'Title'),
-            AdminTextField(controller: categoryController, label: 'Category'),
-            AdminTextField(
-              controller: messageController,
-              label: 'Message',
-              maxLines: 4,
+          if (title.isEmpty || message.isEmpty) {
+            _showSnack('Notification title and message are required.');
+            return;
+          }
+          Navigator.of(context).pop(
+            NotificationModel(
+              id: '',
+              title: title,
+              message: message,
+              category: values['Category']!.isEmpty
+                  ? 'Announcements'
+                  : values['Category']!,
+              color: LearnifyColors.info.toARGB32(),
+              icon: 'campaign',
+              requiresAction: false,
+              createdAt: Timestamp.now(),
             ),
-          ],
-          onSubmit: () {
-            final title = titleController.text.trim();
-            final message = messageController.text.trim();
+          );
+        },
+      ),
+    );
 
-            if (title.isEmpty || message.isEmpty) {
-              _showSnack('Notification title and message are required.');
-              return;
-            }
+    if (!mounted) return;
 
-            Navigator.of(context).pop(
-              LearnifyNotification(
-                title: title,
-                message: message,
-                category: categoryController.text.trim().isEmpty
-                    ? 'Announcements'
-                    : categoryController.text.trim(),
-                time: 'Just now',
-                icon: Icons.campaign_outlined,
-                color: LearnifyColors.info,
-              ),
-            );
-          },
-        ),
-      );
+    if (added != null) {
+      await NotificationService.instance.addNotification(notification: added);
 
-      if (!mounted) {
-        return;
-      }
-
-      if (added != null) {
-        setState(() => _notifications.insert(0, added));
-        _showSnack('${added.title} was published.');
-      }
-    } finally {
-      titleController.dispose();
-      messageController.dispose();
-      categoryController.dispose();
+      _showSnack('${added.title} was published.');
     }
   }
 
   Future<void> _showActivityDialog() async {
-    final userController = TextEditingController();
-    final actionController = TextEditingController();
-    final statusController = TextEditingController(text: 'Needs review');
+    final added = await showDialog<AdminUserActivity>(
+      context: context,
+      builder: (context) => AdminFormDialog(
+        title: 'Log User Activity',
+        actionLabel: 'Log Activity',
+        fields: const [
+          ('User name', '', 1),
+          ('Activity', '', 3),
+          ('Status', 'Needs review', 1),
+        ],
+        onSubmit: (values) {
+          final user = values['User name'] ?? '';
+          final action = values['Activity'] ?? '';
 
-    try {
-      final added = await showDialog<AdminUserActivity>(
-        context: context,
-        builder: (context) => AdminFormDialog(
-          title: 'Log User Activity',
-          actionLabel: 'Log Activity',
-          children: [
-            AdminTextField(controller: userController, label: 'User name'),
-            AdminTextField(
-              controller: actionController,
-              label: 'Activity',
-              maxLines: 3,
+          if (user.isEmpty || action.isEmpty) {
+            _showSnack('User and activity are required.');
+            return;
+          }
+
+          Navigator.of(context).pop(
+            AdminUserActivity(
+              user: user,
+              action: action,
+              status: values['Status']!.isEmpty
+                  ? 'Needs review'
+                  : values['Status']!,
+              time: 'Just now',
+              color: LearnifyColors.warning,
             ),
-            AdminTextField(controller: statusController, label: 'Status'),
-          ],
-          onSubmit: () {
-            final user = userController.text.trim();
-            final action = actionController.text.trim();
+          );
+        },
+      ),
+    );
 
-            if (user.isEmpty || action.isEmpty) {
-              _showSnack('User and activity are required.');
-              return;
-            }
+    if (!mounted) return;
 
-            Navigator.of(context).pop(
-              AdminUserActivity(
-                user: user,
-                action: action,
-                status: statusController.text.trim().isEmpty
-                    ? 'Needs review'
-                    : statusController.text.trim(),
-                time: 'Just now',
-                color: LearnifyColors.warning,
-              ),
-            );
-          },
-        ),
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      if (added != null) {
-        setState(() => _activities.insert(0, added));
-        _showSnack('Activity was logged for ${added.user}.');
-      }
-    } finally {
-      userController.dispose();
-      actionController.dispose();
-      statusController.dispose();
+    if (added != null) {
+      setState(() => _activities.insert(0, added));
+      _showSnack('Activity was logged for ${added.user}.');
     }
+  }
+
+  Future<void> _showUserAdminDialog(AppUser user) async {
+    final values = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (context) => AdminFormDialog(
+        title: 'Update User',
+        actionLabel: 'Save',
+        headerWidget: Text(
+          user.email,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        fields: [
+          ('Role', user.role, 1),
+          ('Active', user.isActive ? 'true' : 'false', 1),
+          ('Admin department', user.adminDepartment, 1),
+          ('Admin access level', user.adminAccessLevel, 1),
+        ],
+        onSubmit: (values) {
+          Navigator.of(context).pop(values);
+        },
+      ),
+    );
+
+    if (values == null) return;
+
+    await UserService.instance.updateUserAdminFields(
+      uid: user.uid,
+      role: values['Role']!.isEmpty ? user.role : values['Role']!,
+      isActive: (values['Active'] ?? 'true').toLowerCase() == 'true',
+      adminDepartment: values['Admin department'] ?? '',
+      adminAccessLevel: values['Admin access level']!.isEmpty
+          ? 'standard'
+          : values['Admin access level']!,
+    );
+    _showSnack('${user.name.isEmpty ? user.email : user.name} was updated.');
   }
 
   Color _colorForIndex(int index) {
@@ -451,6 +478,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     ];
 
     return colors[index % colors.length];
+  }
+
+  List<String> _splitList(String value) {
+    return value
+        .split(',')
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList();
   }
 
   void _showSnack(String message) {

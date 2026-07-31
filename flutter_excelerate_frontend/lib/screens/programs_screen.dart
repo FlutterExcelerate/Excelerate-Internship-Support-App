@@ -1,64 +1,86 @@
 import 'package:flutter/material.dart';
 import 'package:animations/animations.dart';
-
-import '../models/learnify_models.dart';
+import 'package:flutter_excelerate_frontend/widgets/learnify_widgets.dart';
 import '../theme/app_theme.dart';
-import '../widgets/learnify_widgets.dart';
 import 'program_details_screen.dart';
+import '../firebase/models/program_model.dart';
+import '../firebase/service/program_service.dart';
 
 class ProgramsScreen extends StatelessWidget {
   const ProgramsScreen({super.key, this.showAppBar = true});
 
   final bool showAppBar;
 
-  
-
   @override
   Widget build(BuildContext context) {
-    final content = ListView(
-      key: const ValueKey('programs'),
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-      children: [
-        TextField(
-          decoration: InputDecoration(
-            hintText: 'Search programs...',
-            prefixIcon: const Icon(Icons.search_rounded),
-            suffixIcon: IconButton(
-              onPressed: () {},
-              icon: const Icon(Icons.tune_rounded),
-            ),
-          ),
-        ),
-        const SizedBox(height: 14),
-        const Wrap(
-          spacing: 8,
-          runSpacing: 8,
+    final content = StreamBuilder<List<ProgramModel>>(
+      stream: ProgramService.instance.publishedProgramsStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text(snapshot.error.toString()));
+        }
+
+        final programs = snapshot.data ?? [];
+        final publishedPrograms = programs
+            .where((program) => program.isPublished)
+            .toList();
+
+        return ListView(
+          key: const ValueKey('programs'),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
           children: [
-            Pill(
-              label: 'Internship',
-              icon: Icons.work_outline_rounded,
-              color: LearnifyColors.secondary,
+            TextField(
+              decoration: InputDecoration(
+                hintText: 'Search programs...',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.tune_rounded),
+                ),
+              ),
             ),
-            Pill(
-              label: 'Course',
-              icon: Icons.menu_book_outlined,
-              color: LearnifyColors.primary,
+            const SizedBox(height: 14),
+            const Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Pill(
+                  label: 'Internship',
+                  icon: Icons.work_outline_rounded,
+                  color: LearnifyColors.secondary,
+                ),
+                Pill(
+                  label: 'Course',
+                  icon: Icons.menu_book_outlined,
+                  color: LearnifyColors.primary,
+                ),
+                Pill(
+                  label: 'Workspace',
+                  icon: Icons.dashboard_customize_outlined,
+                  color: LearnifyColors.success,
+                ),
+              ],
             ),
-            Pill(
-              label: 'Workspace',
-              icon: Icons.dashboard_customize_outlined,
-              color: LearnifyColors.success,
+            const SizedBox(height: 18),
+            if (publishedPrograms.isEmpty)
+              SectionCard(
+                child: Text(
+                  'No published programs yet.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            ...publishedPrograms.map(
+              (program) => Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: _ProgramCard(program: program),
+              ),
             ),
           ],
-        ),
-        const SizedBox(height: 18),
-        ...programs.map(
-          (program) => Padding(
-            padding: const EdgeInsets.only(bottom: 14),
-            child: _ProgramCard(program: program),
-          ),
-        ),
-      ],
+        );
+      },
     );
 
     if (!showAppBar) {
@@ -75,7 +97,7 @@ class ProgramsScreen extends StatelessWidget {
 class _ProgramCard extends StatelessWidget {
   const _ProgramCard({required this.program});
 
-  final Program program;
+  final ProgramModel program;
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +111,10 @@ class _ProgramCard extends StatelessWidget {
             children: [
               Hero(
                 tag: 'program_badge_${program.title}',
-                child: IconBadge(icon: Icons.school_outlined, color: program.color),
+                child: IconBadge(
+                  icon: Icons.school_outlined,
+                  color: Color(program.color),
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -120,12 +145,13 @@ class _ProgramCard extends StatelessWidget {
               Pill(
                 label: program.category,
                 icon: Icons.local_offer_outlined,
-                color: program.color,
+                color: Color(program.color),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  '${program.duration} • ${program.level}',
+                  '${program.duration} • ${program.level}'
+                  '${program.capacity > 0 ? ' • ${program.capacity} seats' : ''}',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),
@@ -139,6 +165,28 @@ class _ProgramCard extends StatelessWidget {
               ),
             ],
           ),
+          if (program.mentorName.isNotEmpty ||
+              program.applicationDeadline.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (program.mentorName.isNotEmpty)
+                  Pill(
+                    label: program.mentorName,
+                    icon: Icons.person_outline_rounded,
+                    color: LearnifyColors.info,
+                  ),
+                if (program.applicationDeadline.isNotEmpty)
+                  Pill(
+                    label: 'Apply by ${program.applicationDeadline}',
+                    icon: Icons.event_outlined,
+                    color: LearnifyColors.warning,
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );

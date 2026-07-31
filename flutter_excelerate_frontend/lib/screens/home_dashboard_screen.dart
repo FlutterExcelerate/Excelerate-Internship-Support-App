@@ -3,7 +3,8 @@ import 'package:animations/animations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_excelerate_frontend/screens/profile_screen.dart';
 
-import '../models/learnify_models.dart';
+import '../firebase/models/program_model.dart';
+import '../firebase/service/program_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/learnify_widgets.dart';
 import 'daily_pulse_screen.dart';
@@ -22,79 +23,85 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
   int _selectedIndex = 0;
   int _previousIndex = 0;
 
-  final _courses = [ProgramsScreen.programs[0], ProgramsScreen.programs[2]];
-
   @override
   Widget build(BuildContext context) {
-    final pages = [
-      _DashboardTab(
-        courses: _courses,
-        onNavigate: _openTab,
-        onTapCourse: (program) => _openProgramDetails(context, program),
-      ),
-      const ProgramsScreen(showAppBar: false),
-      const NotificationsScreen(showAppBar: false),
-      const ProfileTab(),
-    ];
+    return StreamBuilder<List<ProgramModel>>(
+      stream: ProgramService.instance.publishedProgramsStream(),
+      builder: (context, snapshot) {
+        final courses = snapshot.data ?? [];
+        final pages = [
+          _DashboardTab(
+            courses: courses,
+            onNavigate: _openTab,
+            onTapCourse: (program) => _openProgramDetails(context, program),
+          ),
+          const ProgramsScreen(showAppBar: false),
+          const NotificationsScreen(showAppBar: false),
+          const ProfileTab(),
+        ];
 
-    return ResponsiveScaffold(
-      appBar: AppBar(
-        leadingWidth: 0,
-        title: Row(
-          children: [
-            const Icon(Icons.school_rounded, color: LearnifyColors.primary),
-            const SizedBox(width: 8),
-            Text(
-              _selectedIndex == 0 ? 'Learnify' : _titleForIndex(_selectedIndex),
+        return ResponsiveScaffold(
+          appBar: AppBar(
+            leadingWidth: 0,
+            title: Row(
+              children: [
+                const Icon(Icons.school_rounded, color: LearnifyColors.primary),
+                const SizedBox(width: 8),
+                Text(
+                  _selectedIndex == 0
+                      ? 'Learnify'
+                      : _titleForIndex(_selectedIndex),
+                ),
+              ],
             ),
-          ],
-        ),
-        actions: [
-          const ThemeToggleButton(),
-          const SizedBox(width: 8),
-          IconButton(
-            onPressed: () => _openTab(2),
-            icon: const Icon(Icons.notifications_none_rounded),
-          ),
-          IconButton(
-            onPressed: () => _openTab(3),
-            icon: const Icon(Icons.account_circle_outlined),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: GradientBlobBackground(
-              child: PageTransitionSwitcher(
-                duration: const Duration(milliseconds: 350),
-                reverse: _selectedIndex < _previousIndex,
-                transitionBuilder:
-                    (child, primaryAnimation, secondaryAnimation) {
-                      return SharedAxisTransition(
-                        animation: primaryAnimation,
-                        secondaryAnimation: secondaryAnimation,
-                        transitionType: SharedAxisTransitionType.horizontal,
-                        fillColor: Colors.transparent,
-                        child: child,
-                      );
-                    },
-                child: pages[_selectedIndex],
+            actions: [
+              const ThemeToggleButton(),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: () => _openTab(2),
+                icon: const Icon(Icons.notifications_none_rounded),
               ),
-            ),
+              IconButton(
+                onPressed: () => _openTab(3),
+                icon: const Icon(Icons.account_circle_outlined),
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: 5,
-            child: FloatingGlassNavBar(
-              selectedIndex: _selectedIndex,
-              onDestinationSelected: _openTab,
-            ),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: GradientBlobBackground(
+                  child: PageTransitionSwitcher(
+                    duration: const Duration(milliseconds: 350),
+                    reverse: _selectedIndex < _previousIndex,
+                    transitionBuilder:
+                        (child, primaryAnimation, secondaryAnimation) {
+                          return SharedAxisTransition(
+                            animation: primaryAnimation,
+                            secondaryAnimation: secondaryAnimation,
+                            transitionType: SharedAxisTransitionType.horizontal,
+                            fillColor: Colors.transparent,
+                            child: child,
+                          );
+                        },
+                    child: pages[_selectedIndex],
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 20,
+                right: 20,
+                bottom: 5,
+                child: FloatingGlassNavBar(
+                  selectedIndex: _selectedIndex,
+                  onDestinationSelected: _openTab,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -112,7 +119,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
     });
   }
 
-  void _openProgramDetails(BuildContext context, Program program) {
+  void _openProgramDetails(BuildContext context, ProgramModel program) {
     Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
@@ -138,9 +145,9 @@ class _DashboardTab extends StatelessWidget {
     required this.onTapCourse,
   });
 
-  final List<Program> courses;
+  final List<ProgramModel> courses;
   final ValueChanged<int> onNavigate;
-  final ValueChanged<Program> onTapCourse;
+  final ValueChanged<ProgramModel> onTapCourse;
 
   @override
   Widget build(BuildContext context) {
@@ -282,7 +289,7 @@ class _DashboardTab extends StatelessWidget {
 class _CourseTile extends StatelessWidget {
   const _CourseTile({required this.program, required this.onTap});
 
-  final Program program;
+  final ProgramModel program;
   final VoidCallback onTap;
 
   @override
@@ -293,7 +300,10 @@ class _CourseTile extends StatelessWidget {
         children: [
           Hero(
             tag: 'program_badge_${program.title}',
-            child: IconBadge(icon: Icons.school_outlined, color: program.color),
+            child: IconBadge(
+              icon: Icons.school_outlined,
+              color: Color(program.color),
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -306,18 +316,11 @@ class _CourseTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${(program.progress * 100).round()}% complete • ${program.duration}',
+                  '${program.category} • ${program.duration}',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 10),
-          CircularProgressRing(
-            progress: program.progress,
-            color: program.color,
-            size: 44,
-            strokeWidth: 4.0,
           ),
         ],
       ),

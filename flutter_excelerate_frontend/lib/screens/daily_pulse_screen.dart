@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../firebase/models/daily_pulse_model.dart';
+import '../firebase/service/daily_pulse_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/learnify_widgets.dart';
 
@@ -16,6 +18,7 @@ class _DailyPulseScreenState extends State<DailyPulseScreen> {
   final _reflectionController = TextEditingController();
   final _selectedTags = <String>{'#Work', '#Mission'};
   int _selectedMood = 3;
+  bool _isSaving = false;
 
   final _moods = const [
     ('Drained', Icons.sentiment_very_dissatisfied_rounded),
@@ -40,9 +43,40 @@ class _DailyPulseScreenState extends State<DailyPulseScreen> {
     }
   }
 
-  void _submitPulse() {
+  Future<void> _submitPulse() async {
     HapticFeedback.mediumImpact();
-    Navigator.of(context).pop();
+    setState(() => _isSaving = true);
+
+    try {
+      await DailyPulseService.instance.addPulse(
+        mood: _selectedMood,
+        moodLabel: _moods[_selectedMood].$1,
+        reflection: _reflectionController.text.trim(),
+        tags: _selectedTags.toList()..sort(),
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Daily Pulse saved.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.of(context).pop();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not save pulse: $error'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 
   @override
@@ -128,10 +162,102 @@ class _DailyPulseScreenState extends State<DailyPulseScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    onPressed: _submitPulse,
-                    icon: const Icon(Icons.check_circle_outline_rounded),
-                    label: const Text('Submit Pulse'),
+                    onPressed: _isSaving ? null : _submitPulse,
+                    icon: _isSaving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.check_circle_outline_rounded),
+                    label: Text(_isSaving ? 'Saving...' : 'Submit Pulse'),
                   ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text('Recent Check-ins', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 10),
+          StreamBuilder<List<DailyPulseModel>>(
+            stream: DailyPulseService.instance.currentUserPulsesStream(),
+            builder: (context, snapshot) {
+              final pulses = snapshot.data ?? [];
+
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (pulses.isEmpty) {
+                return SectionCard(
+                  child: Text(
+                    'No check-ins yet.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                );
+              }
+
+              return Column(
+                children: pulses.take(3).map((pulse) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _PulseTile(pulse: pulse),
+                  );
+                }).toList(),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PulseTile extends StatelessWidget {
+  const _PulseTile({required this.pulse});
+
+  final DailyPulseModel pulse;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return SectionCard(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const IconBadge(
+            icon: Icons.favorite_rounded,
+            color: LearnifyColors.wellness,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(pulse.moodLabel, style: theme.textTheme.titleMedium),
+                if (pulse.reflection.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    pulse.reflection,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: pulse.tags
+                      .map(
+                        (tag) => Pill(
+                          label: tag,
+                          icon: Icons.sell_outlined,
+                          color: LearnifyColors.primary,
+                        ),
+                      )
+                      .toList(),
                 ),
               ],
             ),
@@ -177,21 +303,23 @@ class _MoodItem extends StatelessWidget {
               color: isSelected
                   ? LearnifyColors.wellness.withValues(alpha: 0.16)
                   : theme.brightness == Brightness.light
-                      ? const Color(0xFFF1F5F9)
-                      : const Color(0xFF1E293B),
+                  ? const Color(0xFFF1F5F9)
+                  : const Color(0xFF1E293B),
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color: isSelected
                     ? LearnifyColors.wellness
                     : theme.brightness == Brightness.light
-                        ? const Color(0xFFE2E8F0)
-                        : const Color(0xFF334155),
+                    ? const Color(0xFFE2E8F0)
+                    : const Color(0xFF334155),
                 width: isSelected ? 1.8 : 1.0,
               ),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: LearnifyColors.wellness.withValues(alpha: isDark ? 0.2 : 0.15),
+                        color: LearnifyColors.wellness.withValues(
+                          alpha: isDark ? 0.2 : 0.15,
+                        ),
                         blurRadius: 16,
                         offset: const Offset(0, 8),
                       ),
@@ -206,7 +334,9 @@ class _MoodItem extends StatelessWidget {
                   size: 26,
                   color: isSelected
                       ? LearnifyColors.wellness
-                      : (isDark ? LearnifyColors.mutedDark : LearnifyColors.mutedLight),
+                      : (isDark
+                            ? LearnifyColors.mutedDark
+                            : LearnifyColors.mutedLight),
                 ),
                 const SizedBox(height: 6),
                 FittedBox(
@@ -215,10 +345,14 @@ class _MoodItem extends StatelessWidget {
                     label,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 11,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w600,
                       color: isSelected
                           ? LearnifyColors.wellness
-                          : (isDark ? LearnifyColors.mutedDark : LearnifyColors.mutedLight),
+                          : (isDark
+                                ? LearnifyColors.mutedDark
+                                : LearnifyColors.mutedLight),
                     ),
                   ),
                 ),

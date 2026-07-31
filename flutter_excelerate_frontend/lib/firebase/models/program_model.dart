@@ -9,6 +9,13 @@ class ProgramModel {
   final String duration;
   final String level;
   final String imageUrl;
+  final String mentorName;
+  final String mentorEmail;
+  final String applicationDeadline;
+  final String schedule;
+  final int capacity;
+  final List<String> outcomes;
+  final List<String> prerequisites;
   final int color;
   final bool isPublished;
   final String createdBy;
@@ -23,6 +30,13 @@ class ProgramModel {
     required this.duration,
     required this.level,
     required this.imageUrl,
+    this.mentorName = '',
+    this.mentorEmail = '',
+    this.applicationDeadline = '',
+    this.schedule = '',
+    this.capacity = 0,
+    this.outcomes = const [],
+    this.prerequisites = const [],
     required this.color,
     required this.isPublished,
     required this.createdBy,
@@ -43,13 +57,22 @@ class ProgramModel {
       duration: data['duration'] ?? '',
       level: data['level'] ?? '',
       imageUrl: data['imageUrl'] ?? '',
-      color: data['color'] ?? Colors.blue,
+      mentorName: data['mentorName'] ?? '',
+      mentorEmail: data['mentorEmail'] ?? '',
+      applicationDeadline: data['applicationDeadline'] ?? '',
+      schedule: data['schedule'] ?? '',
+      capacity: (data['capacity'] as num?)?.toInt() ?? 0,
+      outcomes: List<String>.from(data['outcomes'] ?? const []),
+      prerequisites: List<String>.from(data['prerequisites'] ?? const []),
+      color: (data['color'] as num?)?.toInt() ?? Colors.blue.toARGB32(),
       isPublished: data['isPublished'] ?? false,
       createdBy: data['createdBy'] ?? '',
       createdAt: data['createdAt'] ?? Timestamp.now(),
       updatedAt: data['updatedAt'] ?? Timestamp.now(),
     );
   }
+
+  Color get colorValue => Color(color);
   Map<String, dynamic> toMap() {
     return {
       'title': title,
@@ -58,6 +81,13 @@ class ProgramModel {
       'duration': duration,
       'level': level,
       'imageUrl': imageUrl,
+      'mentorName': mentorName,
+      'mentorEmail': mentorEmail,
+      'applicationDeadline': applicationDeadline,
+      'schedule': schedule,
+      'capacity': capacity,
+      'outcomes': outcomes,
+      'prerequisites': prerequisites,
       'color': color,
       'isPublished': isPublished,
       'createdBy': createdBy,

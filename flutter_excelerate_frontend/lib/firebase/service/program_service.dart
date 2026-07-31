@@ -38,6 +38,22 @@ class ProgramService {
         );
   }
 
+  Stream<List<ProgramModel>> publishedProgramsStream() {
+    return _programs.where('isPublished', isEqualTo: true).snapshots().map((
+      snapshot,
+    ) {
+      final programs = snapshot.docs
+          .map((doc) => ProgramModel.fromFirestore(doc))
+          .toList();
+      programs.sort((a, b) {
+        final aDate = a.createdAt?.toDate() ?? DateTime(0);
+        final bDate = b.createdAt?.toDate() ?? DateTime(0);
+        return bDate.compareTo(aDate);
+      });
+      return programs;
+    });
+  }
+
   Future<void> deleteProgram(String id) async {
     await _programs.doc(id).delete();
   }

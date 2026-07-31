@@ -1,127 +1,128 @@
 import 'package:flutter/material.dart';
-
-import '../models/learnify_models.dart';
+import 'package:flutter_excelerate_frontend/widgets/learnify_widgets.dart';
 import '../theme/app_theme.dart';
-import '../widgets/learnify_widgets.dart';
+import '../firebase/models/notification_model.dart';
+import '../firebase/service/notification_service.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key, this.showAppBar = true});
 
   final bool showAppBar;
 
-  static const notifications = [
-    LearnifyNotification(
-      title: 'New assignment due tomorrow',
-      message:
-          'Flutter Sprint requires your navigation pattern submission by 9:00 PM tomorrow.',
-      category: 'Assignments',
-      time: '2h ago',
-      icon: Icons.assignment_late_outlined,
-      color: LearnifyColors.warning,
-      requiresAction: true,
-    ),
-    LearnifyNotification(
-      title: 'Live session announced',
-      message:
-          'Join the mentor Q&A on building responsive Flutter interfaces this Friday.',
-      category: 'Announcements',
-      time: 'Today',
-      icon: Icons.campaign_outlined,
-      color: LearnifyColors.info,
-    ),
-    LearnifyNotification(
-      title: 'Course progress updated',
-      message:
-          'Your Workspace Mastery progress has been synced to your profile.',
-      category: 'Updates',
-      time: 'Yesterday',
-      icon: Icons.sync_rounded,
-      color: LearnifyColors.success,
-    ),
-  ];
+  static IconData iconFromString(String icon) {
+    switch (icon) {
+      case 'assignment':
+      case 'assignment_late':
+        return Icons.assignment_outlined;
+      case 'campaign':
+      case 'announcement':
+        return Icons.campaign_outlined;
+      case 'sync':
+      case 'update':
+        return Icons.sync_rounded;
+      case 'warning':
+        return Icons.warning_amber_rounded;
+      default:
+        return Icons.notifications_rounded;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final content = ListView(
-      key: const ValueKey('notifications'),
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-      children: [
-        const Wrap(
-          spacing: 8,
-          runSpacing: 8,
+    final content = StreamBuilder<List<NotificationModel>>(
+      stream: NotificationService.instance.notificationsStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text(snapshot.error.toString()));
+        }
+
+        final notifications = snapshot.data ?? [];
+
+        return ListView(
+          key: const ValueKey('notifications'),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
           children: [
-            Pill(
-              label: 'Announcements',
-              icon: Icons.campaign_outlined,
-              color: LearnifyColors.info,
-            ),
-            Pill(
-              label: 'Assignments',
-              icon: Icons.assignment_outlined,
-              color: LearnifyColors.warning,
-            ),
-            Pill(
-              label: 'Updates',
-              icon: Icons.sync_rounded,
-              color: LearnifyColors.success,
-            ),
-          ],
-        ),
-        const SizedBox(height: 18),
-        ...notifications.map(
-          (item) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: SectionCard(
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => NotificationDetailsScreen(notification: item),
+            const Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Pill(
+                  label: 'Announcements',
+                  icon: Icons.campaign_outlined,
+                  color: LearnifyColors.info,
                 ),
-              ),
-              child: Row(
-                children: [
-                  IconBadge(icon: item.icon, color: item.color),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.category,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.labelLarge?.copyWith(color: item.color),
+                Pill(
+                  label: 'Assignments',
+                  icon: Icons.assignment_outlined,
+                  color: LearnifyColors.warning,
+                ),
+                Pill(
+                  label: 'Updates',
+                  icon: Icons.sync_rounded,
+                  color: LearnifyColors.success,
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            ...notifications.map(
+              (notification) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: SectionCard(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => NotificationDetailsScreen(
+                          notification: notification,
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          item.title,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          item.message,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    children: [
-                      Text(
-                        item.time,
-                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      IconBadge(
+                        icon: iconFromString(notification.icon),
+                        color: Color(notification.color),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              notification.category,
+                              style: Theme.of(context).textTheme.labelLarge
+                                  ?.copyWith(color: Color(notification.color)),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              notification.title,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              notification.message,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       const Icon(Icons.chevron_right_rounded),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
 
     if (!showAppBar) {
@@ -138,10 +139,13 @@ class NotificationsScreen extends StatelessWidget {
 class NotificationDetailsScreen extends StatelessWidget {
   const NotificationDetailsScreen({super.key, required this.notification});
 
-  final LearnifyNotification notification;
+  final NotificationModel notification;
 
   @override
   Widget build(BuildContext context) {
+    final icon = NotificationsScreen.iconFromString(notification.icon);
+    final color = Color(notification.color);
+
     return ResponsiveScaffold(
       appBar: AppBar(title: const Text('Notification Details')),
       child: ListView(
@@ -152,17 +156,9 @@ class NotificationDetailsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                IconBadge(
-                  icon: notification.icon,
-                  color: notification.color,
-                  size: 64,
-                ),
+                IconBadge(icon: icon, color: color, size: 64),
                 const SizedBox(height: 18),
-                Pill(
-                  label: notification.category,
-                  icon: notification.icon,
-                  color: notification.color,
-                ),
+                Pill(label: notification.category, icon: icon, color: color),
                 const SizedBox(height: 16),
                 Text(
                   notification.title,

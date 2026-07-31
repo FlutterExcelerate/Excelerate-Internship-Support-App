@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_excelerate_frontend/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../main.dart';
 
@@ -883,6 +884,170 @@ class _ThemeToggleButtonState extends State<ThemeToggleButton>
                     ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class LearnifyDialogShell extends StatelessWidget {
+  const LearnifyDialogShell({
+    super.key,
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.child,
+    required this.primaryLabel,
+    required this.onPrimaryPressed,
+    this.subtitle,
+    this.isPrimaryLoading = false,
+  });
+
+  final String title;
+  final String? subtitle;
+  final IconData icon;
+  final Color color;
+  final Widget child;
+  final String primaryLabel;
+  final VoidCallback? onPrimaryPressed;
+  final bool isPrimaryLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+      backgroundColor: Colors.transparent,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440, maxHeight: 680),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: Material(
+            color: isDark ? const Color(0xFF101827) : const Color(0xFFF6FAF8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(22, 22, 18, 12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      IconBadge(icon: icon, color: color, size: 48),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(title, style: theme.textTheme.headlineMedium),
+                            if (subtitle != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                subtitle!,
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Close',
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(22, 8, 22, 12),
+                    child: child,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(22, 14, 22, 22),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF0B1220).withValues(alpha: 0.72)
+                        : Colors.white.withValues(alpha: 0.72),
+                    border: Border(
+                      top: BorderSide(
+                        color: isDark
+                            ? LearnifyColors.borderDark
+                            : LearnifyColors.borderLight,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: FilledButton.icon(
+                          onPressed: isPrimaryLoading ? null : onPrimaryPressed,
+                          icon: isPrimaryLoading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.check_rounded),
+                          label: Text(primaryLabel),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class LearnifyDialogField extends StatelessWidget {
+  const LearnifyDialogField({
+    super.key,
+    required this.controller,
+    required this.label,
+    required this.icon,
+    this.maxLines = 1,
+    this.keyboardType,
+    this.errorText,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final IconData icon;
+  final int maxLines;
+  final TextInputType? keyboardType;
+  final String? errorText;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: controller,
+        maxLines: maxLines,
+        keyboardType: keyboardType,
+        textInputAction: maxLines == 1 ? TextInputAction.next : null,
+        decoration: InputDecoration(
+          labelText: label,
+          errorText: errorText,
+          prefixIcon: Icon(icon),
+          alignLabelWithHint: maxLines > 1,
         ),
       ),
     );

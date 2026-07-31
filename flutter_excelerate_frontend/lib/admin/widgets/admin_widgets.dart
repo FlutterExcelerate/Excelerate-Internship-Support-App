@@ -1,10 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_excelerate_frontend/firebase/models/notification_model.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import '../../models/learnify_models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/learnify_widgets.dart';
 import '../models/admin_user_activity.dart';
+import '../../firebase/models/program_model.dart';
 
 class AdminHero extends StatelessWidget {
   const AdminHero({super.key, required this.email});
@@ -197,40 +198,159 @@ class AdminSectionTitle extends StatelessWidget {
   }
 }
 
-class AdminFormDialog extends StatelessWidget {
+class AdminFormDialog extends StatefulWidget {
   const AdminFormDialog({
     super.key,
     required this.title,
     required this.actionLabel,
-    required this.children,
+    required this.fields,
     required this.onSubmit,
+    this.headerWidget,
   });
 
   final String title;
   final String actionLabel;
-  final List<Widget> children;
-  final VoidCallback onSubmit;
+
+  final List<(String label, String initial, int maxLines)> fields;
+
+  final void Function(Map<String, String> values) onSubmit;
+
+  final Widget? headerWidget;
+
+  @override
+  State<AdminFormDialog> createState() => _AdminFormDialogState();
+}
+
+class _AdminFormDialogState extends State<AdminFormDialog> {
+  late final List<TextEditingController> _controllers;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllers = widget.fields
+        .map((f) => TextEditingController(text: f.$2))
+        .toList();
+  }
+
+  @override
+  void dispose() {
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Map<String, String> get _values => {
+    for (var i = 0; i < widget.fields.length; i++)
+      widget.fields[i].$1: _controllers[i].text.trim(),
+  };
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(title),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ...children.expand((child) => [child, const SizedBox(height: 12)]),
+    return LearnifyDialogShell(
+      title: widget.title,
+      subtitle: _subtitleForTitle(widget.title),
+      icon: _iconForTitle(widget.title),
+      color: _colorForTitle(widget.title),
+      primaryLabel: widget.actionLabel,
+      onPrimaryPressed: () => widget.onSubmit(_values),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (widget.headerWidget != null) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: widget.headerWidget!,
+            ),
+            const SizedBox(height: 12),
           ],
-        ),
+          ...List.generate(
+            widget.fields.length,
+            (i) => LearnifyDialogField(
+              controller: _controllers[i],
+              label: widget.fields[i].$1,
+              icon: _iconForField(widget.fields[i].$1),
+              maxLines: widget.fields[i].$3,
+              keyboardType: _keyboardForField(widget.fields[i].$1),
+            ),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(onPressed: onSubmit, child: Text(actionLabel)),
-      ],
     );
+  }
+
+  String? _subtitleForTitle(String title) {
+    if (title.contains('Program')) {
+      return 'Add the required details students need before enrolling.';
+    }
+    if (title.contains('Notification')) {
+      return 'Publish a clear update for all signed-in learners.';
+    }
+    if (title.contains('Module')) {
+      return 'Create the next learning step inside this program.';
+    }
+    if (title.contains('User')) {
+      return 'Adjust access details carefully.';
+    }
+    return null;
+  }
+
+  IconData _iconForTitle(String title) {
+    if (title.contains('Program')) return Icons.school_outlined;
+    if (title.contains('Notification')) return Icons.campaign_outlined;
+    if (title.contains('Module')) return Icons.playlist_add_rounded;
+    if (title.contains('User')) return Icons.manage_accounts_outlined;
+    return Icons.edit_note_rounded;
+  }
+
+  Color _colorForTitle(String title) {
+    if (title.contains('Program')) return LearnifyColors.primary;
+    if (title.contains('Notification')) return LearnifyColors.info;
+    if (title.contains('Module')) return LearnifyColors.secondary;
+    if (title.contains('User')) return LearnifyColors.warning;
+    return LearnifyColors.primary;
+  }
+
+  IconData _iconForField(String label) {
+    final normalized = label.toLowerCase();
+    if (normalized.contains('title')) return Icons.title_rounded;
+    if (normalized.contains('category')) return Icons.local_offer_outlined;
+    if (normalized.contains('duration')) return Icons.schedule_outlined;
+    if (normalized.contains('level')) return Icons.trending_up_rounded;
+    if (normalized.contains('mentor')) return Icons.person_outline_rounded;
+    if (normalized.contains('email')) return Icons.mail_outline_rounded;
+    if (normalized.contains('deadline')) return Icons.event_outlined;
+    if (normalized.contains('schedule')) return Icons.calendar_month_outlined;
+    if (normalized.contains('capacity')) return Icons.event_seat_outlined;
+    if (normalized.contains('outcomes')) return Icons.flag_outlined;
+    if (normalized.contains('prerequisites')) {
+      return Icons.fact_check_outlined;
+    }
+    if (normalized.contains('description')) return Icons.notes_outlined;
+    if (normalized.contains('message')) {
+      return Icons.chat_bubble_outline_rounded;
+    }
+    if (normalized.contains('role')) return Icons.badge_outlined;
+    if (normalized.contains('active')) return Icons.toggle_on_outlined;
+    if (normalized.contains('department')) return Icons.apartment_outlined;
+    if (normalized.contains('access')) {
+      return Icons.admin_panel_settings_outlined;
+    }
+    return Icons.edit_outlined;
+  }
+
+  TextInputType? _keyboardForField(String label) {
+    final normalized = label.toLowerCase();
+    if (normalized.contains('email')) return TextInputType.emailAddress;
+    if (normalized.contains('capacity')) return TextInputType.number;
+    return null;
   }
 }
 
@@ -263,8 +383,8 @@ class AdminProgramCard extends StatelessWidget {
     required this.onAddModule,
   });
 
-  final Program program;
-  final ValueChanged<Program> onAddModule;
+  final ProgramModel program;
+  final ValueChanged<ProgramModel> onAddModule;
 
   @override
   Widget build(BuildContext context) {
@@ -274,7 +394,10 @@ class AdminProgramCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              IconBadge(icon: Icons.school_outlined, color: program.color),
+              IconBadge(
+                icon: Icons.school_outlined,
+                color: Color(program.color),
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -307,27 +430,40 @@ class AdminProgramCard extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: program.modules.isEmpty
-                ? [
-                    const Pill(
-                      label: 'No modules yet',
-                      icon: Icons.pending_outlined,
-                      color: LearnifyColors.warning,
-                    ),
-                  ]
-                : program.modules
-                      .map(
-                        (module) => Pill(
-                          label: module.title,
-                          icon: module.isComplete
-                              ? Icons.check_rounded
-                              : Icons.menu_book_outlined,
-                          color: module.isComplete
-                              ? LearnifyColors.success
-                              : LearnifyColors.primary,
-                        ),
-                      )
-                      .toList(),
+            children: [
+              Pill(
+                label: program.isPublished ? 'Published' : 'Draft',
+                icon: program.isPublished
+                    ? Icons.public_rounded
+                    : Icons.drafts_outlined,
+                color: program.isPublished
+                    ? LearnifyColors.success
+                    : LearnifyColors.warning,
+              ),
+              if (program.mentorName.isNotEmpty)
+                Pill(
+                  label: program.mentorName,
+                  icon: Icons.person_outline_rounded,
+                  color: LearnifyColors.info,
+                ),
+              if (program.capacity > 0)
+                Pill(
+                  label: '${program.capacity} seats',
+                  icon: Icons.event_seat_outlined,
+                  color: LearnifyColors.secondary,
+                ),
+              if (program.applicationDeadline.isNotEmpty)
+                Pill(
+                  label: 'Due ${program.applicationDeadline}',
+                  icon: Icons.event_outlined,
+                  color: LearnifyColors.warning,
+                ),
+              const Pill(
+                label: 'Modules in Firestore',
+                icon: Icons.cloud_done_outlined,
+                color: LearnifyColors.info,
+              ),
+            ],
           ),
         ],
       ),
@@ -338,14 +474,44 @@ class AdminProgramCard extends StatelessWidget {
 class AdminNotificationCard extends StatelessWidget {
   const AdminNotificationCard({super.key, required this.notification});
 
-  final LearnifyNotification notification;
+  final NotificationModel notification;
+  IconData _iconFromString(String icon) {
+    switch (icon) {
+      case 'assignment':
+        return Icons.assignment_outlined;
+      case 'campaign':
+        return Icons.campaign_outlined;
+      case 'sync':
+        return Icons.sync_rounded;
+      case 'warning':
+        return Icons.warning_amber_rounded;
+      default:
+        return Icons.notifications_rounded;
+    }
+  }
+
+  String timeAgo(Timestamp timestamp) {
+    final now = DateTime.now();
+    final date = timestamp.toDate();
+    final difference = now.difference(date);
+
+    if (difference.inSeconds < 60) return 'Just now';
+    if (difference.inMinutes < 60) return '${difference.inMinutes} min ago';
+    if (difference.inHours < 24) return '${difference.inHours} h ago';
+    if (difference.inDays == 1) return 'Yesterday';
+
+    return '${difference.inDays} days ago';
+  }
 
   @override
   Widget build(BuildContext context) {
     return SectionCard(
       child: Row(
         children: [
-          IconBadge(icon: notification.icon, color: notification.color),
+          IconBadge(
+            icon: _iconFromString(notification.icon),
+            color: Color(notification.color),
+          ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -356,7 +522,7 @@ class AdminNotificationCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 Text(
-                  '${notification.category} - ${notification.time}',
+                  '${notification.category} • ${timeAgo(notification.createdAt)}',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 4),

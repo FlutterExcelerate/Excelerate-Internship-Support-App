@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_excelerate_frontend/firebase/models/notification_model.dart';
+import 'package:flutter_excelerate_frontend/firebase/models/app_user.dart';
+import 'package:flutter_excelerate_frontend/firebase/models/program_model.dart';
 
-import '../../models/learnify_models.dart';
 import '../../theme/app_theme.dart';
 import '../models/admin_user_activity.dart';
 import '../widgets/admin_widgets.dart';
@@ -11,6 +13,7 @@ class AdminOverviewTab extends StatelessWidget {
     super.key,
     required this.programs,
     required this.notifications,
+    required this.users,
     required this.activities,
     required this.onAddProgram,
     required this.onAddNotification,
@@ -18,8 +21,9 @@ class AdminOverviewTab extends StatelessWidget {
     required this.onOpenUsers,
   });
 
-  final List<Program> programs;
-  final List<LearnifyNotification> notifications;
+  final List<ProgramModel> programs;
+  final List<NotificationModel> notifications;
+  final List<AppUser> users;
   final List<AdminUserActivity> activities;
   final VoidCallback onAddProgram;
   final VoidCallback onAddNotification;
@@ -28,15 +32,8 @@ class AdminOverviewTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final completedModules = programs.fold<int>(
-      0,
-      (total, program) =>
-          total + program.modules.where((module) => module.isComplete).length,
-    );
-    final moduleCount = programs.fold<int>(
-      0,
-      (total, program) => total + program.modules.length,
-    );
+    final completedModules = 0;
+    final moduleCount = 0;
     final reviewCount = activities
         .where((item) => item.status.toLowerCase().contains('review'))
         .length;
@@ -75,9 +72,9 @@ class AdminOverviewTab extends StatelessWidget {
                 color: LearnifyColors.info,
               ),
               AdminMetricCard(
-                title: 'User Alerts',
-                value: '$reviewCount',
-                subtitle: 'Activities need attention',
+                title: 'Users',
+                value: '${users.length}',
+                subtitle: '$reviewCount activities need attention',
                 icon: Icons.manage_accounts_outlined,
                 color: LearnifyColors.warning,
               ),

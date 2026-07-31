@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_excelerate_frontend/firebase/service/admin_service.dart';
+import 'package:flutter_excelerate_frontend/theme/app_theme.dart';
+import 'package:flutter_excelerate_frontend/widgets/learnify_widgets.dart';
 
 class AdminCodeDialog extends StatefulWidget {
   const AdminCodeDialog({super.key});
@@ -28,8 +30,9 @@ class _AdminCodeDialogState extends State<AdminCodeDialog> {
     });
 
     try {
-      final success =
-          await AdminService.instance.loginAsAdmin(_controller.text);
+      final success = await AdminService.instance.loginAsAdmin(
+        _controller.text,
+      );
 
       if (!mounted) return;
 
@@ -52,34 +55,25 @@ class _AdminCodeDialogState extends State<AdminCodeDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text("Administrator Login"),
-      content: Column(
+    return LearnifyDialogShell(
+      title: 'Administrator Login',
+      subtitle: 'Enter the access code to unlock admin tools.',
+      icon: Icons.admin_panel_settings_outlined,
+      color: LearnifyColors.secondary,
+      primaryLabel: _loading ? 'Verifying...' : 'Verify',
+      isPrimaryLoading: _loading,
+      onPrimaryPressed: _loading ? null : _verify,
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(
+          LearnifyDialogField(
             controller: _controller,
-            decoration: InputDecoration(
-              labelText: "Admin Code",
-              errorText: _error,
-            ),
+            label: 'Admin Code',
+            icon: Icons.password_rounded,
+            errorText: _error,
           ),
-          const SizedBox(height: 20),
-          if (_loading) const CircularProgressIndicator(),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          child: const Text("Cancel"),
-        ),
-        FilledButton(
-          onPressed: _loading ? null : _verify,
-          child: const Text("Verify"),
-        ),
-      ],
     );
   }
 }

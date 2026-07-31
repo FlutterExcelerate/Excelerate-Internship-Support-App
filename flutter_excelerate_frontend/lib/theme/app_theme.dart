@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class 
-LearnifyColors {
+class LearnifyColors {
   const LearnifyColors._();
-  static const primary = Color(0xFF0F766E); 
+  static const primary = Color(0xFF0F766E);
   static const primaryDark = Color(0xFF14B8A6);
   static const secondary = Color(0xFF4F46E5);
   static const secondaryLight = Color(0xFF818CF8);
-  
-  static const wellness = Color(0xFFF59E0B); 
+
+  static const wellness = Color(0xFFF59E0B);
   static const success = Color(0xFF10B981);
   static const warning = Color(0xFFEF4444);
   static const info = Color(0xFF3B82F6);
@@ -96,7 +95,10 @@ class LearnifyTheme {
       colorScheme: scheme,
       scaffoldBackgroundColor: LearnifyColors.canvasLight,
       brightness: Brightness.light,
-      textTheme: _buildTextTheme(LearnifyColors.inkLight, LearnifyColors.mutedLight),
+      textTheme: _buildTextTheme(
+        LearnifyColors.inkLight,
+        LearnifyColors.mutedLight,
+      ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
@@ -191,7 +193,10 @@ class LearnifyTheme {
       chipTheme: ChipThemeData(
         backgroundColor: LearnifyColors.primary.withValues(alpha: 0.06),
         selectedColor: LearnifyColors.primary,
-        labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
+        labelStyle: GoogleFonts.plusJakartaSans(
+          fontWeight: FontWeight.w700,
+          fontSize: 13,
+        ),
         side: BorderSide.none,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       ),
@@ -214,7 +219,10 @@ class LearnifyTheme {
       colorScheme: scheme,
       scaffoldBackgroundColor: LearnifyColors.canvasDark,
       brightness: Brightness.dark,
-      textTheme: _buildTextTheme(LearnifyColors.inkDark, LearnifyColors.mutedDark),
+      textTheme: _buildTextTheme(
+        LearnifyColors.inkDark,
+        LearnifyColors.mutedDark,
+      ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
@@ -309,7 +317,10 @@ class LearnifyTheme {
       chipTheme: ChipThemeData(
         backgroundColor: LearnifyColors.primaryDark.withValues(alpha: 0.1),
         selectedColor: LearnifyColors.primaryDark,
-        labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
+        labelStyle: GoogleFonts.plusJakartaSans(
+          fontWeight: FontWeight.w700,
+          fontSize: 13,
+        ),
         side: BorderSide.none,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       ),

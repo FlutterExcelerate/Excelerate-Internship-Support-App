@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
-import '../../models/learnify_models.dart';
+import 'package:flutter_excelerate_frontend/firebase/models/notification_model.dart';
+import 'package:flutter_excelerate_frontend/firebase/models/program_model.dart';
 import '../widgets/admin_widgets.dart';
 
 class AdminContentTab extends StatelessWidget {
@@ -13,10 +13,10 @@ class AdminContentTab extends StatelessWidget {
     required this.onAddNotification,
   });
 
-  final List<Program> programs;
-  final List<LearnifyNotification> notifications;
+  final List<ProgramModel> programs;
+  final List<NotificationModel> notifications;
   final VoidCallback onAddProgram;
-  final ValueChanged<Program> onAddModule;
+  final ValueChanged<ProgramModel> onAddModule;
   final VoidCallback onAddNotification;
 
   @override
