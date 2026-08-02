@@ -333,38 +333,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Future<void> _showNotificationDialog() async {
     final added = await showDialog<NotificationModel>(
       context: context,
-      builder: (context) => AdminFormDialog(
-        title: 'Add Notification',
-        actionLabel: 'Publish',
-        fields: const [
-          ('Title', '', 1),
-          ('Category', 'Announcements', 1),
-          ('Message', '', 4),
-        ],
-        onSubmit: (values) {
-          final title = values['Title'] ?? '';
-          final message = values['Message'] ?? '';
-
-          if (title.isEmpty || message.isEmpty) {
-            _showSnack('Notification title and message are required.');
-            return;
-          }
-          Navigator.of(context).pop(
-            NotificationModel(
-              id: '',
-              title: title,
-              message: message,
-              category: values['Category']!.isEmpty
-                  ? 'Announcements'
-                  : values['Category']!,
-              color: LearnifyColors.info.toARGB32(),
-              icon: 'campaign',
-              requiresAction: false,
-              createdAt: Timestamp.now(),
-            ),
-          );
-        },
-      ),
+      builder: (context) => const _NotificationFormDialog(),
     );
 
     if (!mounted) return;
@@ -440,5 +409,130 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
+  }
+}
+
+class _NotificationFormDialog extends StatefulWidget {
+  const _NotificationFormDialog();
+
+  @override
+  State<_NotificationFormDialog> createState() =>
+      _NotificationFormDialogState();
+}
+
+class _NotificationFormDialogState extends State<_NotificationFormDialog> {
+  static const _categories = [
+    'Announcement',
+    'Assignment',
+    'Update',
+    'Reminder',
+    'Alert',
+  ];
+
+  final _titleController = TextEditingController();
+  final _messageController = TextEditingController();
+  String _selectedCategory = _categories.first;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  void _publish() {
+    final title = _titleController.text.trim();
+    final message = _messageController.text.trim();
+
+    if (title.isEmpty || message.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Notification title and message are required.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    Navigator.of(context).pop(
+      NotificationModel(
+        id: '',
+        title: title,
+        message: message,
+        category: _selectedCategory,
+        color: _colorForCategory(_selectedCategory).toARGB32(),
+        icon: _iconKeyForCategory(_selectedCategory),
+        requiresAction: _selectedCategory == 'Assignment',
+        createdAt: Timestamp.now(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LearnifyDialogShell(
+      title: 'Add Notification',
+      subtitle: 'Publish a clear update for all signed-in learners.',
+      icon: Icons.campaign_outlined,
+      color: LearnifyColors.info,
+      primaryLabel: 'Publish',
+      onPrimaryPressed: _publish,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          LearnifyDialogField(
+            controller: _titleController,
+            label: 'Title',
+            icon: Icons.title_rounded,
+          ),
+          DropdownButtonFormField<String>(
+            value: _selectedCategory,
+            decoration: const InputDecoration(
+              labelText: 'Category',
+              prefixIcon: Icon(Icons.local_offer_outlined),
+            ),
+            items: _categories
+                .map(
+                  (category) => DropdownMenuItem<String>(
+                    value: category,
+                    child: Text(category),
+                  ),
+                )
+                .toList(),
+            onChanged: (value) {
+              if (value == null) return;
+              setState(() => _selectedCategory = value);
+            },
+          ),
+          const SizedBox(height: 12),
+          LearnifyDialogField(
+            controller: _messageController,
+            label: 'Message',
+            icon: Icons.chat_bubble_outline_rounded,
+            maxLines: 4,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _colorForCategory(String category) {
+    return switch (category) {
+      'Assignment' => LearnifyColors.warning,
+      'Update' => LearnifyColors.success,
+      'Reminder' => LearnifyColors.wellness,
+      'Alert' => LearnifyColors.warning,
+      _ => LearnifyColors.info,
+    };
+  }
+
+  String _iconKeyForCategory(String category) {
+    return switch (category) {
+      'Assignment' => 'assignment',
+      'Update' => 'sync',
+      'Reminder' => 'warning',
+      'Alert' => 'warning',
+      _ => 'campaign',
+    };
   }
 }

@@ -304,6 +304,7 @@ class _ProgramDeadline {
   static List<_ProgramDeadline> fromPrograms(List<ProgramModel> programs) {
     final today = DateTime.now();
     final startOfToday = DateTime(today.year, today.month, today.day);
+    final latestUpcomingDate = startOfToday.add(const Duration(days: 6));
     final deadlines = programs
         .where((program) => program.applicationDeadline.trim().isNotEmpty)
         .map(
@@ -314,9 +315,21 @@ class _ProgramDeadline {
           ),
         )
         .where(
-          (deadline) =>
-              deadline.parsedDate == null ||
-              !deadline.parsedDate!.isBefore(startOfToday),
+          (deadline) {
+            final parsedDate = deadline.parsedDate;
+            if (parsedDate == null) {
+              return false;
+            }
+
+            final dueDate = DateTime(
+              parsedDate.year,
+              parsedDate.month,
+              parsedDate.day,
+            );
+
+            return !dueDate.isBefore(startOfToday) &&
+                !dueDate.isAfter(latestUpcomingDate);
+          },
         )
         .toList();
 

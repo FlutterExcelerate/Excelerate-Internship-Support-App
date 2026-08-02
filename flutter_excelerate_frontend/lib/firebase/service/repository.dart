@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_excelerate_frontend/firebase/service/admin_session_guard.dart';
 import 'package:flutter_excelerate_frontend/firebase/service/user_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -45,6 +46,7 @@ class AuthRepository {
   }
 
   Future<void> signOut() async {
+    AdminSessionGuard.clear();
     try {
       await _googleSignIn.signOut();
     } catch (_) {}

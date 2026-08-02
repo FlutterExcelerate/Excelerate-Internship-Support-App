@@ -9,6 +9,7 @@ class DailyPulseModel {
     required this.reflection,
     required this.tags,
     required this.createdAt,
+    required this.expiresAt,
   });
 
   final String id;
@@ -18,6 +19,7 @@ class DailyPulseModel {
   final String reflection;
   final List<String> tags;
   final Timestamp createdAt;
+  final Timestamp expiresAt;
 
   factory DailyPulseModel.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
@@ -32,8 +34,17 @@ class DailyPulseModel {
       reflection: data['reflection'] ?? '',
       tags: List<String>.from(data['tags'] ?? const []),
       createdAt: data['createdAt'] ?? Timestamp.now(),
+      expiresAt:
+          data['expiresAt'] ??
+          Timestamp.fromDate(
+            ((data['createdAt'] as Timestamp?) ?? Timestamp.now())
+                .toDate()
+                .add(const Duration(hours: 24)),
+          ),
     );
   }
+
+  bool get isExpired => !expiresAt.toDate().isAfter(DateTime.now());
 
   Map<String, dynamic> toMap() {
     return {
@@ -43,6 +54,7 @@ class DailyPulseModel {
       'reflection': reflection,
       'tags': tags,
       'createdAt': createdAt,
+      'expiresAt': expiresAt,
     };
   }
 }

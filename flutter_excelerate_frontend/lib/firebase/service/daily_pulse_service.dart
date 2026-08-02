@@ -25,13 +25,21 @@ class DailyPulseService {
       throw Exception('No user is logged in.');
     }
 
+    final now = Timestamp.now();
+    final expiresAt = Timestamp.fromDate(
+      now.toDate().add(const Duration(hours: 24)),
+    );
+
+    await cleanupExpiredPulses(userId: user.uid);
+
     await _pulses.add({
       'userId': user.uid,
       'mood': mood,
       'moodLabel': moodLabel,
       'reflection': reflection,
       'tags': tags,
-      'createdAt': FieldValue.serverTimestamp(),
+      'createdAt': now,
+      'expiresAt': expiresAt,
     });
   }
 
@@ -42,8 +50,24 @@ class DailyPulseService {
       query = query.where('userId', isEqualTo: userId);
     }
 
-    return query.snapshots().map((snapshot) {
-      final pulses = snapshot.docs.map(DailyPulseModel.fromFirestore).toList();
+    return query.snapshots().asyncMap((snapshot) async {
+      final expiredDocs = snapshot.docs.where((doc) {
+        final pulse = DailyPulseModel.fromFirestore(doc);
+        return pulse.isExpired;
+      }).toList();
+
+      if (expiredDocs.isNotEmpty) {
+        final batch = _firestore.batch();
+        for (final doc in expiredDocs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+      }
+
+      final pulses = snapshot.docs
+          .map(DailyPulseModel.fromFirestore)
+          .where((pulse) => !pulse.isExpired)
+          .toList();
       pulses.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return pulses;
     });
@@ -56,5 +80,29 @@ class DailyPulseService {
     }
 
     return pulsesStream(userId: user.uid);
+  }
+
+  Future<void> cleanupExpiredPulses({String? userId}) async {
+    Query<Map<String, dynamic>> query = _pulses;
+
+    if (userId != null) {
+      query = query.where('userId', isEqualTo: userId);
+    }
+
+    final snapshot = await query.get();
+    final expiredDocs = snapshot.docs.where((doc) {
+      final pulse = DailyPulseModel.fromFirestore(doc);
+      return pulse.isExpired;
+    }).toList();
+
+    if (expiredDocs.isEmpty) {
+      return;
+    }
+
+    final batch = _firestore.batch();
+    for (final doc in expiredDocs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
   }
 }

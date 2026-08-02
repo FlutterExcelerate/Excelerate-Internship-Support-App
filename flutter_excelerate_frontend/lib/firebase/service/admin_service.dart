@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_excelerate_frontend/firebase/models/user_role.dart';
+import 'package:flutter_excelerate_frontend/firebase/service/admin_session_guard.dart';
 
 class AdminService {
   AdminService._();
@@ -66,6 +67,10 @@ class AdminService {
         return false;
       }
       await promoteCurrentUserToAdmin();
+      final user = _auth.currentUser;
+      if (user != null) {
+        AdminSessionGuard.markVerified(user.uid);
+      }
 
       return true;
     } on FirebaseException catch (e) {
