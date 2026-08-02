@@ -19,6 +19,9 @@ import '../tabs/admin_users_tab.dart';
 import '../widgets/admin_widgets.dart';
 import '../../firebase/models/notification_model.dart';
 import '../../firebase/service/notification_service.dart';
+import 'dart:async';
+import '../../ai_assistant/ai_module.dart';
+import '../../ai_assistant/core/personas/admin_persona.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -30,6 +33,35 @@ class AdminDashboardScreen extends StatefulWidget {
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   int _selectedIndex = 0;
   int _previousIndex = 0;
+  StreamSubscription<AiActionRequest>? _actionSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!AiModule.isInitialized) {
+        AiModule.initialize();
+      }
+      
+      AiModule.instance.patchApplicationContext(
+        system: const AiSystemContext(system: 'AdminPanel', isAdmin: true),
+      );
+
+      _actionSubscription = AiModule.instance.actionStream.listen((action) {
+        if (!mounted) return;
+        if (action.type == 'openDashboard' || action.type == 'openOverview') _selectTab(0);
+        else if (action.type == 'openContent') _selectTab(1);
+        else if (action.type == 'openUsers') _selectTab(2);
+        else if (action.type == 'openSecurity' || action.type == 'openSettings') _selectTab(3);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _actionSubscription?.cancel();
+    super.dispose();
+  }
 
   final ProgramService _programService = ProgramService.instance;
 
@@ -172,6 +204,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                               onDestinationSelected: _selectTab,
                             ),
                           ),
+                          Positioned(
+                            bottom: 85,
+                            right: 16,
+                            child: const AiLauncher(persona: AdminPersona()),
+                          ),
                         ],
                       ),
                     );
@@ -197,6 +234,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       _previousIndex = _selectedIndex;
       _selectedIndex = index;
     });
+    
+    AiModule.instance.patchApplicationContext(
+      adminDashboardContext: AiAdminDashboardContext(
+        currentSelectedTab: _titleForIndex(index).toLowerCase(),
+      ),
+    );
   }
 
   Future<void> _showProgramDialog(int currentProgramCount) async {

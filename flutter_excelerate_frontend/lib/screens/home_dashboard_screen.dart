@@ -3,6 +3,10 @@ import 'package:animations/animations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_excelerate_frontend/screens/profile_screen.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
+
+import '../ai_assistant/ai_module.dart';
+import '../ai_assistant/core/personas/student_persona.dart';
 
 import '../firebase/models/program_model.dart';
 import '../firebase/service/program_service.dart';
@@ -23,6 +27,30 @@ class HomeDashboardScreen extends StatefulWidget {
 class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
   int _selectedIndex = 0;
   int _previousIndex = 0;
+  StreamSubscription<AiActionRequest>? _actionSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!AiModule.isInitialized) {
+        AiModule.initialize();
+      }
+      _actionSubscription = AiModule.instance.actionStream.listen((action) {
+        if (!mounted) return;
+        if (action.type == 'openDashboard') _openTab(0);
+        else if (action.type == 'openPrograms') _openTab(1);
+        else if (action.type == 'openNotifications') _openTab(2);
+        else if (action.type == 'openProfile') _openTab(3);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _actionSubscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +58,20 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
       stream: ProgramService.instance.publishedProgramsStream(),
       builder: (context, snapshot) {
         final courses = snapshot.data ?? [];
+        
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (AiModule.isInitialized) {
+            final contracts = courses.map((c) => AiProgramContract(
+              id: c.id,
+              title: c.title,
+              category: c.category,
+              description: c.description,
+            )).toList();
+            AiModule.instance.patchApplicationContext(
+              programs: AiProgramsContext(programs: contracts),
+            );
+          }
+        });
         final pages = [
           _DashboardTab(
             courses: courses,
@@ -98,6 +140,11 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                   selectedIndex: _selectedIndex,
                   onDestinationSelected: _openTab,
                 ),
+              ),
+              Positioned(
+                bottom: 85,
+                right: 16,
+                child: const AiLauncher(persona: StudentPersona()),
               ),
             ],
           ),
