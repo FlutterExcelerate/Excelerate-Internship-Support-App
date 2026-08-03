@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../firebase/models/module_model.dart';
-import '../firebase/models/program_model.dart';
-import '../firebase/service/module_service.dart';
-import '../theme/app_theme.dart';
+import '../../firebase/models/module_model.dart';
+import '../../firebase/models/program_model.dart';
+import '../../firebase/service/module_service.dart';
+import '../../theme/app_theme.dart';
 import '../widgets/learnify_widgets.dart';
 
 class ProgramDetailsScreen extends StatelessWidget {

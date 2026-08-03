@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_excelerate_frontend/firebase/service/admin_service.dart';
 import 'package:flutter_excelerate_frontend/theme/app_theme.dart';
-import 'package:flutter_excelerate_frontend/widgets/learnify_widgets.dart';
+import 'package:flutter_excelerate_frontend/student/widgets/learnify_widgets.dart';
 
 class AdminCodeDialog extends StatefulWidget {
   const AdminCodeDialog({super.key});

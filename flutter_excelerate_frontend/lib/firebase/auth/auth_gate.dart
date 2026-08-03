@@ -7,7 +7,7 @@ import 'package:flutter_excelerate_frontend/admin/screens/admin_dashboard_screen
 import 'package:flutter_excelerate_frontend/admin/screens/admin_verification_screen.dart';
 import 'package:flutter_excelerate_frontend/firebase/service/admin_session_guard.dart';
 import 'package:flutter_excelerate_frontend/firebase/service/user_service.dart';
-import 'package:flutter_excelerate_frontend/screens/home_dashboard_screen.dart';
+import 'package:flutter_excelerate_frontend/student/screens/home_dashboard_screen.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});

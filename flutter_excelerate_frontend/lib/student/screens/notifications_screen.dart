@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_excelerate_frontend/widgets/learnify_widgets.dart';
-import '../theme/app_theme.dart';
-import '../firebase/models/notification_model.dart';
-import '../firebase/service/notification_service.dart';
+import 'package:flutter_excelerate_frontend/student/widgets/learnify_widgets.dart';
+import '../../theme/app_theme.dart';
+import '../../firebase/models/notification_model.dart';
+import '../../firebase/service/notification_service.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key, this.showAppBar = true});

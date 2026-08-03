@@ -4,7 +4,7 @@ import 'package:flutter_excelerate_frontend/firebase/models/app_user.dart';
 import 'package:flutter_excelerate_frontend/firebase/service/repository.dart';
 import 'package:flutter_excelerate_frontend/firebase/service/user_service.dart';
 import 'package:flutter_excelerate_frontend/theme/app_theme.dart';
-import 'package:flutter_excelerate_frontend/widgets/learnify_widgets.dart';
+import 'package:flutter_excelerate_frontend/student/widgets/learnify_widgets.dart';
 
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});

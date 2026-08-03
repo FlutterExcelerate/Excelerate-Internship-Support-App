@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_excelerate_frontend/firebase/models/notification_model.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/learnify_widgets.dart';
+import '../../student/widgets/learnify_widgets.dart';
 import '../models/admin_user_activity.dart';
 import '../../firebase/models/program_model.dart';
 
@@ -221,6 +221,7 @@ class AdminFormDialog extends StatefulWidget {
 
 class _AdminFormDialogState extends State<AdminFormDialog> {
   late final List<TextEditingController> _controllers;
+  bool _controllersDisposed = false;
 
   @override
   void initState() {
@@ -232,9 +233,16 @@ class _AdminFormDialogState extends State<AdminFormDialog> {
 
   @override
   void dispose() {
-    for (final c in _controllers) {
-      c.dispose();
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_controllersDisposed) {
+          _controllersDisposed = true;
+          for (final c in _controllers) {
+            c.dispose();
+          }
+        }
+      });
+    });
     super.dispose();
   }
 

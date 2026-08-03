@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:animations/animations.dart';
-import 'package:flutter_excelerate_frontend/widgets/learnify_widgets.dart';
-import '../theme/app_theme.dart';
+import 'package:flutter_excelerate_frontend/student/widgets/learnify_widgets.dart';
+import '../../theme/app_theme.dart';
 import 'program_details_screen.dart';
-import '../firebase/models/program_model.dart';
-import '../firebase/service/program_service.dart';
+import '../../firebase/models/program_model.dart';
+import '../../firebase/service/program_service.dart';
 
 class ProgramsScreen extends StatelessWidget {
   const ProgramsScreen({super.key, this.showAppBar = true});

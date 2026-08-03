@@ -5,7 +5,7 @@ import 'package:flutter_excelerate_frontend/admin/screens/admin_dashboard_screen
 import 'package:flutter_excelerate_frontend/firebase/service/admin_session_guard.dart';
 import 'package:flutter_excelerate_frontend/firebase/service/repository.dart';
 import 'package:flutter_excelerate_frontend/theme/app_theme.dart';
-import 'package:flutter_excelerate_frontend/widgets/learnify_widgets.dart';
+import 'package:flutter_excelerate_frontend/student/widgets/learnify_widgets.dart';
 
 class AdminVerificationScreen extends StatefulWidget {
   const AdminVerificationScreen({super.key, required this.uid});

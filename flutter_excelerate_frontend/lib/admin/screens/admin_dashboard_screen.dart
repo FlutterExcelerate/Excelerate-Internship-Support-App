@@ -1,6 +1,16 @@
+// ignore_for_file: curly_braces_in_flow_control_structures
+
+import 'dart:async';
+
 import 'package:animations/animations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_excelerate_frontend/ai_assistant/context/ai_admin_context.dart';
+import 'package:flutter_excelerate_frontend/ai_assistant/context/ai_context_provider.dart';
+import 'package:flutter_excelerate_frontend/ai_assistant/core/persona/admin_persona.dart';
+import 'package:flutter_excelerate_frontend/ai_assistant/module/ai_action.dart';
+import 'package:flutter_excelerate_frontend/ai_assistant/module/ai_module.dart';
+import 'package:flutter_excelerate_frontend/ai_assistant/widget/ai_launcher.dart';
 import 'package:flutter_excelerate_frontend/firebase/models/program_model.dart';
 import '../../firebase/models/module_model.dart';
 import '../../firebase/models/app_user.dart';
@@ -11,7 +21,7 @@ import '../../firebase/service/repository.dart';
 import '../../firebase/service/program_service.dart';
 import '../../firebase/service/user_service.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/learnify_widgets.dart';
+import '../../student/widgets/learnify_widgets.dart';
 import '../tabs/admin_content_tab.dart';
 import '../tabs/admin_overview_tab.dart';
 import '../tabs/admin_settings_tab.dart';
@@ -30,6 +40,40 @@ class AdminDashboardScreen extends StatefulWidget {
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   int _selectedIndex = 0;
   int _previousIndex = 0;
+
+  StreamSubscription<AiActionRequest>? _actionSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!AiModule.isInitialized) {
+        AiModule.initialize();
+      }
+
+      AiModule.instance.patchApplicationContext(
+        system: const AiSystemContext(system: 'AdminPanel', isAdmin: true),
+      );
+
+      _actionSubscription = AiModule.instance.actionStream.listen((action) {
+        if (!mounted) return;
+        if (action.type == 'openDashboard' || action.type == 'openOverview')
+          _selectTab(0);
+        else if (action.type == 'openContent')
+          _selectTab(1);
+        else if (action.type == 'openUsers')
+          _selectTab(2);
+        else if (action.type == 'openSecurity' || action.type == 'openSettings')
+          _selectTab(3);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _actionSubscription?.cancel();
+    super.dispose();
+  }
 
   final ProgramService _programService = ProgramService.instance;
 
@@ -84,6 +128,33 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     final pulses = pulseSnapshot.data ?? [];
                     final notifications = notificationSnapshot.data ?? [];
                     final programs = snapshot.data ?? [];
+
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (AiModule.isInitialized) {
+                        AiModule.instance.patchApplicationContext(
+                          programs: AiProgramsContext(
+                            programs: programs.map((c) => AiProgramContract(
+                              id: c.id,
+                              title: c.title,
+                              category: c.category,
+                              description: c.description,
+                            )).toList(),
+                          ),
+                          adminUsersContext: AiAdminUsersContext(
+                            adminUsers: users.where((u) => u.role == 'admin').map((u) => u.uid).toList(),
+                            activeStudents: users.where((u) => u.role == 'student' && u.isActive).map((u) => '${u.name} (${u.email})').toList(),
+                            inactiveStudents: users.where((u) => u.role == 'student' && !u.isActive).map((u) => '${u.name} (${u.email})').toList(),
+                          ),
+                          adminContentContext: AiAdminContentContext(
+                            publishedPrograms: programs.where((p) => p.isPublished).map((p) => p.title).toList(),
+                            draftPrograms: programs.where((p) => !p.isPublished).map((p) => p.title).toList(),
+                            categories: programs.map((p) => p.category).toSet().toList(),
+                            upcomingDeadlines: programs.where((p) => p.applicationDeadline.isNotEmpty).map((p) => '${p.title}: ${p.applicationDeadline}').toList(),
+                          ),
+                        );
+                      }
+                    });
+
                     final pages = [
                       AdminOverviewTab(
                         programs: programs,
@@ -107,7 +178,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         pulses: pulses,
                         onEditUser: _showUserAdminDialog,
                       ),
-                      const AdminSettingsTab(adminEmails: {}),
+                      AdminSettingsTab(users: users, programs: programs),
                     ];
 
                     final safeIndex = _selectedIndex.clamp(0, pages.length - 1);
@@ -172,6 +243,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                               onDestinationSelected: _selectTab,
                             ),
                           ),
+                          Positioned(
+                            bottom: 85,
+                            right: 16,
+                            child: const AiLauncher(persona: AdminPersona()),
+                          ),
                         ],
                       ),
                     );
@@ -197,6 +273,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       _previousIndex = _selectedIndex;
       _selectedIndex = index;
     });
+
+    AiModule.instance.patchApplicationContext(
+      adminDashboardContext: AiAdminDashboardContext(
+        currentSelectedTab: _titleForIndex(index).toLowerCase(),
+      ),
+    );
   }
 
   Future<void> _showProgramDialog(int currentProgramCount) async {
@@ -431,12 +513,20 @@ class _NotificationFormDialogState extends State<_NotificationFormDialog> {
 
   final _titleController = TextEditingController();
   final _messageController = TextEditingController();
+  bool _controllersDisposed = false;
   String _selectedCategory = _categories.first;
 
   @override
   void dispose() {
-    _titleController.dispose();
-    _messageController.dispose();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_controllersDisposed) {
+          _controllersDisposed = true;
+          _titleController.dispose();
+          _messageController.dispose();
+        }
+      });
+    });
     super.dispose();
   }
 

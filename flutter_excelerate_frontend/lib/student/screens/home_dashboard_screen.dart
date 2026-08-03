@@ -1,12 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:animations/animations.dart';
+import 'package:flutter_excelerate_frontend/ai_assistant/context/ai_context_provider.dart';
+import 'package:flutter_excelerate_frontend/ai_assistant/core/persona/student_persona.dart';
+import 'package:flutter_excelerate_frontend/ai_assistant/module/ai_action.dart';
+import 'package:flutter_excelerate_frontend/ai_assistant/module/ai_module.dart';
+import 'package:flutter_excelerate_frontend/ai_assistant/widget/ai_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_excelerate_frontend/screens/profile_screen.dart';
+import 'package:flutter_excelerate_frontend/student/screens/profile_screen.dart';
 import 'package:intl/intl.dart';
 
-import '../firebase/models/program_model.dart';
-import '../firebase/service/program_service.dart';
-import '../theme/app_theme.dart';
+import '../../firebase/models/program_model.dart';
+import '../../firebase/models/app_user.dart';
+import '../../firebase/service/program_service.dart';
+import '../../firebase/service/repository.dart';
+import '../../firebase/service/user_service.dart';
+import '../../theme/app_theme.dart';
 import '../widgets/learnify_widgets.dart';
 import 'daily_pulse_screen.dart';
 import 'notifications_screen.dart';
@@ -24,12 +34,85 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
   int _selectedIndex = 0;
   int _previousIndex = 0;
 
+  StreamSubscription<AiActionRequest>? _actionSubscription;
+  StreamSubscription<AppUser?>? _userSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!AiModule.isInitialized) {
+        AiModule.initialize();
+      }
+      
+      final uid = AuthRepository.instance.currentUser?.uid;
+      if (uid != null) {
+        _userSubscription = UserService.instance.userStream(uid).listen((user) {
+          if (user != null && mounted) {
+            AiModule.instance.patchApplicationContext(
+              user: AiUserContext(
+                id: user.uid,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                preferences: {
+                  'skills': user.skills,
+                  'cohort': user.cohort,
+                  'location': user.location,
+                  'headline': user.headline,
+                },
+              ),
+            );
+          }
+        });
+      }
+
+      _actionSubscription = AiModule.instance.actionStream.listen((action) {
+        if (!mounted) return;
+        if (action.type == 'openDashboard')
+          _openTab(0);
+        else if (action.type == 'openPrograms')
+          _openTab(1);
+        else if (action.type == 'openNotifications')
+          _openTab(2);
+        else if (action.type == 'openProfile')
+          _openTab(3);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _actionSubscription?.cancel();
+    _userSubscription?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<ProgramModel>>(
       stream: ProgramService.instance.publishedProgramsStream(),
       builder: (context, snapshot) {
         final courses = snapshot.data ?? [];
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (AiModule.isInitialized) {
+            final contracts = courses
+                .map(
+                  (c) => AiProgramContract(
+                    id: c.id,
+                    title: c.title,
+                    category: c.category,
+                    description: c.description,
+                  ),
+                )
+                .toList();
+            AiModule.instance.patchApplicationContext(
+              programs: AiProgramsContext(programs: contracts),
+            );
+          }
+        });
+
         final pages = [
           _DashboardTab(
             courses: courses,
@@ -98,6 +181,11 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                   selectedIndex: _selectedIndex,
                   onDestinationSelected: _openTab,
                 ),
+              ),
+              Positioned(
+                bottom: 85,
+                right: 16,
+                child: const AiLauncher(persona: StudentPersona()),
               ),
             ],
           ),
@@ -314,23 +402,21 @@ class _ProgramDeadline {
             parsedDate: _parseDate(program.applicationDeadline.trim()),
           ),
         )
-        .where(
-          (deadline) {
-            final parsedDate = deadline.parsedDate;
-            if (parsedDate == null) {
-              return false;
-            }
+        .where((deadline) {
+          final parsedDate = deadline.parsedDate;
+          if (parsedDate == null) {
+            return false;
+          }
 
-            final dueDate = DateTime(
-              parsedDate.year,
-              parsedDate.month,
-              parsedDate.day,
-            );
+          final dueDate = DateTime(
+            parsedDate.year,
+            parsedDate.month,
+            parsedDate.day,
+          );
 
-            return !dueDate.isBefore(startOfToday) &&
-                !dueDate.isAfter(latestUpcomingDate);
-          },
-        )
+          return !dueDate.isBefore(startOfToday) &&
+              !dueDate.isAfter(latestUpcomingDate);
+        })
         .toList();
 
     deadlines.sort((a, b) {

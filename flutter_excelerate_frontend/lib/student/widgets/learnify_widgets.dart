@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_excelerate_frontend/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../main.dart';
+import '../../main.dart';
 
 class SectionCard extends StatefulWidget {
   const SectionCard({

@@ -3,7 +3,7 @@ import 'package:flutter_excelerate_frontend/firebase/models/app_user.dart';
 import 'package:flutter_excelerate_frontend/firebase/models/daily_pulse_model.dart';
 
 import '../../theme/app_theme.dart';
-import '../../widgets/learnify_widgets.dart';
+import '../../student/widgets/learnify_widgets.dart';
 
 class AdminUsersTab extends StatefulWidget {
   const AdminUsersTab({
