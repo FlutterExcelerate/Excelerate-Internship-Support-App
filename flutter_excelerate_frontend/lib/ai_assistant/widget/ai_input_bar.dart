@@ -29,6 +29,9 @@ class _AiInputBarState extends State<AiInputBar>
         setState(() => _hasText = hasText);
       }
     });
+    _focusNode.addListener(() {
+      setState(() {});
+    });
   }
 
   @override
@@ -52,6 +55,10 @@ class _AiInputBarState extends State<AiInputBar>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    // Keep the radius in one place so the outer shadow container,
+    // the ClipRRect, and the border all stay perfectly in sync.
+    const double fieldRadius = 24.0;
+
     return SafeArea(
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
@@ -70,11 +77,14 @@ class _AiInputBarState extends State<AiInputBar>
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Container(
+              margin: const EdgeInsets.only(bottom: 2),
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: theme.colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.5,
-                ),
+                color: isDark
+                    ? const Color(0xFF2A2D35)
+                    : const Color(0xFFE2E8F0),
               ),
               child: IconButton(
                 icon: Icon(
@@ -87,41 +97,70 @@ class _AiInputBarState extends State<AiInputBar>
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Container(
+              // Outer container: owns the border + shadow only.
+              // Shadows must stay OUTSIDE any clip, so we don't
+              // clip this one directly.
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                constraints: const BoxConstraints(minHeight: 48),
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF2A2D35)
-                      : const Color(0xFFF0F2F5),
-                  borderRadius: BorderRadius.circular(24.0),
+                  borderRadius: BorderRadius.circular(fieldRadius),
                   border: Border.all(
                     color: _focusNode.hasFocus
-                        ? theme.colorScheme.primary.withValues(alpha: 0.5)
+                        ? theme.colorScheme.primary.withValues(alpha: 0.6)
                         : Colors.transparent,
                     width: 1.5,
                   ),
-                ),
-                child: TextField(
-                  controller: _controller,
-                  focusNode: _focusNode,
-                  enabled: widget.isEnabled,
-                  textInputAction: TextInputAction.send,
-                  minLines: 1,
-                  maxLines: 5,
-                  onSubmitted: (_) => _submit(),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Ask the AI Assistant...',
-                    hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.7,
-                      ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _focusNode.hasFocus
+                          ? theme.colorScheme.primary.withValues(alpha: 0.15)
+                          : Colors.transparent,
+                      blurRadius: _focusNode.hasFocus ? 12.0 : 0.0,
+                      offset: _focusNode.hasFocus
+                          ? const Offset(0, 4)
+                          : const Offset(0, 0),
                     ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20.0,
-                      vertical: 14.0,
+                  ],
+                ),
+                // Inner clip: this is what actually rounds the
+                // TextField's background/ripple/selection paint
+                // so nothing overflows into sharp corners.
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(fieldRadius - 1.5),
+                  child: Container(
+                    color: isDark
+                        ? (_focusNode.hasFocus
+                              ? const Color(0xFF333640)
+                              : const Color(0xFF2A2D35))
+                        : (_focusNode.hasFocus
+                              ? const Color(0xFFFFFFFF)
+                              : const Color(0xFFF0F2F5)),
+                    child: TextField(
+                      controller: _controller,
+                      focusNode: _focusNode,
+                      enabled: widget.isEnabled,
+                      textInputAction: TextInputAction.send,
+                      minLines: 1,
+                      maxLines: 5,
+                      onSubmitted: (_) => _submit(),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Ask the AI Assistant...',
+                        hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.7,
+                          ),
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20.0,
+                          vertical: 14.0,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -136,6 +175,9 @@ class _AiInputBarState extends State<AiInputBar>
                 opacity: (_hasText && widget.isEnabled) ? 1.0 : 0.5,
                 duration: const Duration(milliseconds: 200),
                 child: Container(
+                  margin: const EdgeInsets.only(bottom: 2),
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: theme.colorScheme.primary,

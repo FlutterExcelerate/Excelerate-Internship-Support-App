@@ -141,6 +141,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                     title: c.title,
                                     category: c.category,
                                     description: c.description,
+                                    status: c.isPublished ? 'published' : 'draft',
                                   ),
                                 )
                                 .toList(),
@@ -152,13 +153,25 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                 .toList(),
                             activeStudents: users
                                 .where((u) => u.role == 'student' && u.isActive)
-                                .map((u) => '${u.name} (${u.email})')
+                                .map((u) => '${u.name.isNotEmpty ? u.name : 'Unknown'} (${u.email})')
                                 .toList(),
                             inactiveStudents: users
                                 .where(
                                   (u) => u.role == 'student' && !u.isActive,
                                 )
-                                .map((u) => '${u.name} (${u.email})')
+                                .map((u) => '${u.name.isNotEmpty ? u.name : 'Unknown'} (${u.email})')
+                                .toList(),
+                            studentProfiles: users
+                                .where((u) => u.role == 'student')
+                                .map((u) => {
+                                  'name': u.name,
+                                  'email': u.email,
+                                  'isActive': u.isActive,
+                                  'cohort': u.cohort,
+                                  'location': u.location,
+                                  'headline': u.headline,
+                                  'skills': u.skills,
+                                })
                                 .toList(),
                           ),
                           adminContentContext: AiAdminContentContext(

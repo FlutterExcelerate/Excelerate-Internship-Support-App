@@ -134,6 +134,7 @@ class AiAdminUsersContext implements ContextEntity {
   final List<String> adminUsers;
   final Map<String, dynamic> rolePermissions;
   final Map<String, dynamic>? selectedUser;
+  final List<Map<String, dynamic>> studentProfiles;
 
   const AiAdminUsersContext({
     this.activeStudents = const [],
@@ -141,6 +142,7 @@ class AiAdminUsersContext implements ContextEntity {
     this.adminUsers = const [],
     this.rolePermissions = const {},
     this.selectedUser,
+    this.studentProfiles = const [],
   });
 
   AiAdminUsersContext copyWith({
@@ -149,6 +151,7 @@ class AiAdminUsersContext implements ContextEntity {
     List<String>? adminUsers,
     Map<String, dynamic>? rolePermissions,
     Map<String, dynamic>? selectedUser,
+    List<Map<String, dynamic>>? studentProfiles,
   }) {
     return AiAdminUsersContext(
       activeStudents: activeStudents ?? this.activeStudents,
@@ -156,6 +159,7 @@ class AiAdminUsersContext implements ContextEntity {
       adminUsers: adminUsers ?? this.adminUsers,
       rolePermissions: rolePermissions ?? this.rolePermissions,
       selectedUser: selectedUser ?? this.selectedUser,
+      studentProfiles: studentProfiles ?? this.studentProfiles,
     );
   }
 
@@ -166,6 +170,7 @@ class AiAdminUsersContext implements ContextEntity {
     'adminUsers': adminUsers,
     'rolePermissions': rolePermissions,
     if (selectedUser != null) 'selectedUser': selectedUser,
+    if (studentProfiles.isNotEmpty) 'studentProfiles': studentProfiles,
   };
 }
 

@@ -155,11 +155,11 @@ class AdminContextSynchronizer {
       adminUsersContext: AiAdminUsersContext(
         activeStudents: studentUsers
             .where((u) => u.isActive)
-            .map((u) => u.email)
+            .map((u) => '${u.name.isNotEmpty ? u.name : 'Unknown'} (${u.email})')
             .toList(),
         inactiveStudents: studentUsers
             .where((u) => !u.isActive)
-            .map((u) => u.email)
+            .map((u) => '${u.name.isNotEmpty ? u.name : 'Unknown'} (${u.email})')
             .toList(),
         adminUsers: _users
             .where((u) => u.role.toLowerCase() == 'admin')
@@ -167,6 +167,18 @@ class AdminContextSynchronizer {
             .toList(),
         rolePermissions: const {},
         selectedUser: _selectedUser,
+        studentProfiles: studentUsers.map((u) => {
+          'name': u.name,
+          'email': u.email,
+          'role': u.role,
+          'isActive': u.isActive,
+          'cohort': u.cohort,
+          'location': u.location,
+          'headline': u.headline,
+          'skills': u.skills,
+          'adminDepartment': u.adminDepartment,
+          'adminAccessLevel': u.adminAccessLevel,
+        }).toList(),
       ),
     );
   }

@@ -106,6 +106,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                     title: c.title,
                     category: c.category,
                     description: c.description,
+                    status: c.isPublished ? 'published' : 'draft',
                   ),
                 )
                 .toList();

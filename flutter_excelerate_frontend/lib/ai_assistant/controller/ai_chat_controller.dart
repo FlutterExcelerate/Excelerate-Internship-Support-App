@@ -74,7 +74,9 @@ class AiChatController extends ValueNotifier<AiChatState> {
     } catch (e) {
       value = value.copyWith(
         status: AiChatStatus.error,
-        error: AiError(message: 'Request failed: $e'),
+        error: const AiError(
+          message: 'Unable to send message right now. Please try again.',
+        ),
       );
     }
   }
@@ -138,7 +140,9 @@ class AiChatController extends ValueNotifier<AiChatState> {
     } catch (e) {
       value = value.copyWith(
         status: AiChatStatus.error,
-        error: AiError(message: 'Stream failed: $e'),
+        error: const AiError(
+          message: 'Unable to process AI response. Please try again.',
+        ),
       );
     } finally {
       if (value.status == AiChatStatus.streaming) {

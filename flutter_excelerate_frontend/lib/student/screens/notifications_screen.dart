@@ -8,7 +8,7 @@ import '../../firebase/service/notification_service.dart';
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key, this.showAppBar = true});
 
-  final bool showAppBar;
+  final bool showAppBar; 
 
   static IconData iconFromString(String icon) {
     switch (icon) {

@@ -20,6 +20,8 @@ class AiRepositoryImpl {
   final ConversationEngine conversationEngine;
   HttpClientRequest? _activeRequest;
 
+  static int _currentKeyIndex = 0;
+
   AiRepositoryImpl({
     required AiConfig config,
     HttpClient? client,
@@ -29,7 +31,7 @@ class AiRepositoryImpl {
        _client = client ?? HttpClient(),
        _contextManager = contextManager {
     AiLogger.log(
-      'Gemini client initialized with API key length: ${_config.apiKey.length}',
+      'Gemini client initialized with ${_config.apiKeys.length} API key(s)',
       tag: 'Init',
     );
   }
@@ -40,7 +42,7 @@ class AiRepositoryImpl {
     required AiPersona persona,
     bool retry = false,
   }) async {
-    AiLogger.log('Sending message: $text (retry: )', tag: 'Network');
+    AiLogger.log('Sending message: $text (retry: $retry)', tag: 'Network');
     try {
       final currentContext = _contextManager.currentContext;
 
@@ -54,11 +56,12 @@ class AiRepositoryImpl {
         conversationEngine.addMessage(userMessage);
       }
 
-      if (_config.apiKey.trim().isEmpty) {
+      if (_config.apiKeys.isEmpty) {
         final responseMessage = AiMessage(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           role: 'assistant',
-          content: 'Gemini API Key not configured.',
+          content:
+              'AI assistant service is currently unavailable. Please try again later.',
           createdAt: DateTime.now(),
         );
         conversationEngine.addMessage(responseMessage);
@@ -108,11 +111,12 @@ class AiRepositoryImpl {
         conversationEngine.addMessage(userMessage);
       }
 
-      if (_config.apiKey.trim().isEmpty) {
+      if (_config.apiKeys.isEmpty) {
         final responseMessage = AiMessage(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           role: 'assistant',
-          content: 'Gemini API Key not configured.',
+          content:
+              'AI assistant service is currently unavailable. Please try again later.',
           createdAt: DateTime.now(),
         );
         conversationEngine.addMessage(responseMessage);
@@ -154,6 +158,53 @@ class AiRepositoryImpl {
   }
 
   Future<AiResponse> _generateResponse(Map<String, dynamic> payload) async {
+    final totalKeys = _config.apiKeys.length;
+    if (totalKeys == 0) {
+      throw const AiServiceException(
+        'AI service is temporarily unavailable. Please try again later.',
+        providerName: 'gemini',
+      );
+    }
+
+    int attempts = 0;
+    Object? lastError;
+
+    while (attempts < totalKeys) {
+      final keyIndex = _currentKeyIndex % totalKeys;
+      final currentApiKey = _config.apiKeys[keyIndex];
+
+      try {
+        AiLogger.log(
+          'Attempting request with API Key #${keyIndex + 1} of $totalKeys',
+          tag: 'Network',
+        );
+        final response = await _tryGenerateResponse(payload, currentApiKey);
+        return response;
+      } catch (e, st) {
+        lastError = e;
+        AiLogger.error(
+          'API Key #${keyIndex + 1} failed ($e). Rotating to next API key...',
+          e,
+          st,
+        );
+        _currentKeyIndex = (_currentKeyIndex + 1) % totalKeys;
+        attempts++;
+      }
+    }
+
+    if (lastError is AiException) {
+      throw lastError;
+    }
+    throw const AiServiceException(
+      'Unable to connect to the AI service. Please try again in a few moments.',
+      providerName: 'gemini',
+    );
+  }
+
+  Future<AiResponse> _tryGenerateResponse(
+    Map<String, dynamic> payload,
+    String apiKey,
+  ) async {
     final uri = Uri.parse(
       '${_config.apiEndpoint}/models/${_config.modelName}:generateContent',
     );
@@ -164,7 +215,7 @@ class AiRepositoryImpl {
           .timeout(const Duration(seconds: 15));
       _activeRequest = request;
       request.headers.contentType = ContentType.json;
-      request.headers.set('x-goog-api-key', _config.apiKey);
+      request.headers.set('x-goog-api-key', apiKey);
       request.write(jsonEncode(payload));
 
       final httpResponse = await request.close().timeout(
@@ -178,9 +229,15 @@ class AiRepositoryImpl {
 
       return _mapResponse(jsonDecode(responseBody) as Map<String, dynamic>);
     } on TimeoutException catch (e, st) {
-      throw NetworkException('Request timed out', stackTrace: st);
+      throw NetworkException(
+        'Request timed out. Please check your connection and try again.',
+        stackTrace: st,
+      );
     } on SocketException catch (e, st) {
-      throw NetworkException('Network error: $e', stackTrace: st);
+      throw NetworkException(
+        'Network error occurred. Please check your connection.',
+        stackTrace: st,
+      );
     } finally {
       _activeRequest = null;
     }
@@ -189,6 +246,69 @@ class AiRepositoryImpl {
   Stream<AiResponse> _generateResponseStream(
     Map<String, dynamic> payload,
   ) async* {
+    final totalKeys = _config.apiKeys.length;
+    if (totalKeys == 0) {
+      throw const AiServiceException(
+        'AI service is temporarily unavailable. Please try again later.',
+        providerName: 'gemini',
+      );
+    }
+
+    int attempts = 0;
+    Object? lastError;
+    HttpClientResponse? httpResponse;
+
+    while (attempts < totalKeys) {
+      final keyIndex = _currentKeyIndex % totalKeys;
+      final currentApiKey = _config.apiKeys[keyIndex];
+
+      try {
+        AiLogger.log(
+          'Attempting stream request with API Key #${keyIndex + 1} of $totalKeys',
+          tag: 'Network',
+        );
+        httpResponse = await _connectStream(payload, currentApiKey);
+        break;
+      } catch (e, st) {
+        lastError = e;
+        AiLogger.error(
+          'Stream setup with API Key #${keyIndex + 1} failed ($e). Rotating to next API key...',
+          e,
+          st,
+        );
+        _currentKeyIndex = (_currentKeyIndex + 1) % totalKeys;
+        attempts++;
+      }
+    }
+
+    if (httpResponse == null) {
+      if (lastError is AiException) {
+        throw lastError;
+      }
+      throw const AiServiceException(
+        'Unable to connect to the AI service. Please try again in a few moments.',
+        providerName: 'gemini',
+      );
+    }
+
+    final stream = httpResponse
+        .transform(utf8.decoder)
+        .transform(const LineSplitter());
+
+    await for (final line in stream) {
+      if (line.startsWith('data: ')) {
+        final data = line.substring(6).trim();
+        if (data.isNotEmpty) {
+          yield _mapResponse(jsonDecode(data) as Map<String, dynamic>);
+        }
+      }
+    }
+  }
+
+  Future<HttpClientResponse> _connectStream(
+    Map<String, dynamic> payload,
+    String apiKey,
+  ) async {
     final uri = Uri.parse(
       '${_config.apiEndpoint}/models/${_config.modelName}:streamGenerateContent?alt=sse',
     );
@@ -199,49 +319,44 @@ class AiRepositoryImpl {
           .timeout(const Duration(seconds: 15));
       _activeRequest = request;
       request.headers.contentType = ContentType.json;
-      request.headers.set('x-goog-api-key', _config.apiKey);
+      request.headers.set('x-goog-api-key', apiKey);
       request.write(jsonEncode(payload));
 
       final httpResponse = await request.close().timeout(
         const Duration(seconds: 45),
       );
+
       if (httpResponse.statusCode != 200) {
-        _handleApiError(
-          httpResponse.statusCode,
-          await httpResponse.transform(utf8.decoder).join(),
-        );
+        final responseBody = await httpResponse.transform(utf8.decoder).join();
+        _handleApiError(httpResponse.statusCode, responseBody);
       }
 
-      final stream = httpResponse
-          .transform(utf8.decoder)
-          .transform(const LineSplitter());
-
-      await for (final line in stream) {
-        if (line.startsWith('data: ')) {
-          final data = line.substring(6).trim();
-          if (data.isNotEmpty) {
-            yield _mapResponse(jsonDecode(data) as Map<String, dynamic>);
-          }
-        }
-      }
+      return httpResponse;
     } on TimeoutException catch (e, st) {
-      throw NetworkException('Request timed out', stackTrace: st);
+      throw NetworkException(
+        'Request timed out. Please check your connection and try again.',
+        stackTrace: st,
+      );
     } on SocketException catch (e, st) {
-      throw NetworkException('Network error: $e', stackTrace: st);
+      throw NetworkException(
+        'Network error occurred. Please check your connection.',
+        stackTrace: st,
+      );
     } finally {
       _activeRequest = null;
     }
   }
 
   void _handleApiError(int statusCode, String responseBody) {
-    String message = 'Gemini API Error ($statusCode)';
-    try {
-      final errorJson = jsonDecode(responseBody);
-      if (errorJson['error']?['message'] != null) {
-        message = '$message: ${errorJson['error']['message']}';
-      }
-    } catch (_) {
-      message = '$message: $responseBody';
+    AiLogger.error('Gemini API Error ($statusCode)', responseBody);
+    String message =
+        'Unable to connect to the AI service. Please try again later.';
+    if (statusCode == 429) {
+      message =
+          'The AI service is experiencing high traffic. Please try again in a moment.';
+    } else if (statusCode >= 500) {
+      message =
+          'The AI service is temporarily undergoing maintenance. Please try again later.';
     }
     throw AiServiceException(
       message,

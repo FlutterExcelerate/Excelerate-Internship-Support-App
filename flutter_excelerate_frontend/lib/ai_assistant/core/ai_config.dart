@@ -20,7 +20,7 @@ class AiConfig {
   final AiProvider provider;
   final String modelName;
   final String apiEndpoint;
-  final String apiKey;
+  final List<String> apiKeys;
   final double temperature;
   final int maxOutputTokens;
   final Duration requestTimeout;
@@ -33,11 +33,13 @@ class AiConfig {
   final double topP;
   final int topK;
 
+  String get apiKey => apiKeys.isEmpty ? '' : apiKeys.first;
+
   const AiConfig._internal({
     required this.provider,
     required this.modelName,
     required this.apiEndpoint,
-    required this.apiKey,
+    required this.apiKeys,
     required this.temperature,
     required this.maxOutputTokens,
     required this.requestTimeout,
@@ -61,13 +63,29 @@ class AiConfig {
       return defaultValue;
     }
 
-    final String finalApiKey = (apiKey != null && apiKey.isNotEmpty)
-        ? apiKey
-        : getEnv('GEMINI_API_KEY', '');
+    final loadedKeys = <String>[];
+    if (apiKey != null && apiKey.trim().isNotEmpty) {
+      loadedKeys.add(apiKey.trim());
+    }
+
+    if (isEnvLoaded) {
+      if (dotenv.env.containsKey('GEMINI_API_KEY')) {
+        final val = dotenv.env['GEMINI_API_KEY']?.trim() ?? '';
+        if (val.isNotEmpty) loadedKeys.add(val);
+      }
+      for (var i = 1; i <= 10; i++) {
+        final keyName = 'GEMINI_API_KEY_$i';
+        if (dotenv.env.containsKey(keyName)) {
+          final val = dotenv.env[keyName]?.trim() ?? '';
+          if (val.isNotEmpty) loadedKeys.add(val);
+        }
+      }
+    }
+
+    final apiKeys = loadedKeys.toSet().toList(growable: false);
 
     debugPrint('[AiConfig] dotenv loaded: $isEnvLoaded');
-    debugPrint('[AiConfig] API key exists: ${finalApiKey.isNotEmpty}');
-    debugPrint('[AiConfig] API key length: ${finalApiKey.length}');
+    debugPrint('[AiConfig] API keys configured: ${apiKeys.length}');
     debugPrint(
       '[AiConfig] Model name: ${getEnv('GEMINI_MODEL', 'gemini-3.1-flash-lite')}',
     );
@@ -76,7 +94,7 @@ class AiConfig {
       provider: AiProvider.gemini,
       modelName: getEnv('GEMINI_MODEL', 'gemini-3.1-flash-lite'),
       apiEndpoint: 'https://generativelanguage.googleapis.com/v1beta',
-      apiKey: finalApiKey,
+      apiKeys: apiKeys,
       temperature: double.tryParse(getEnv('AI_TEMPERATURE', '')) ?? 0.7,
       maxOutputTokens: int.tryParse(getEnv('AI_MAX_OUTPUT_TOKENS', '')) ?? 1024,
       requestTimeout: Duration(

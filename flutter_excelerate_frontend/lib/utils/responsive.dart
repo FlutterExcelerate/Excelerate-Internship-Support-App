@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Breakpoints tuned for phones, tablets, and larger screens.
 class AppBreakpoints {
   static const double compact = 360;
   static const double mobile = 600;
@@ -66,18 +65,13 @@ extension ResponsiveContext on BuildContext {
     return 1;
   }
 
-  T responsiveValue<T>({
-    required T mobile,
-    T? tablet,
-    T? desktop,
-  }) {
+  T responsiveValue<T>({required T mobile, T? tablet, T? desktop}) {
     if (isDesktop && desktop != null) return desktop;
     if (isWide && tablet != null) return tablet;
     return mobile;
   }
 }
 
-/// Clamps text scaling so layouts stay readable on very small or large devices.
 class ResponsiveAppBuilder extends StatelessWidget {
   const ResponsiveAppBuilder({super.key, required this.child});
 
@@ -92,15 +86,12 @@ class ResponsiveAppBuilder extends StatelessWidget {
     final clampedScale = (currentScale * scaleFactor).clamp(0.85, 1.15);
 
     return MediaQuery(
-      data: mediaQuery.copyWith(
-        textScaler: TextScaler.linear(clampedScale),
-      ),
+      data: mediaQuery.copyWith(textScaler: TextScaler.linear(clampedScale)),
       child: child,
     );
   }
 }
 
-/// Adapts a child between single-column and multi-column layouts.
 class ResponsiveLayout extends StatelessWidget {
   const ResponsiveLayout({
     super.key,
