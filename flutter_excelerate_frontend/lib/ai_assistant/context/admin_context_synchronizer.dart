@@ -26,7 +26,7 @@ class AdminContextSynchronizer {
   List<NotificationModel> _notifications = [];
   List<DailyPulseModel> _pulses = [];
 
-  String? _currentAdminScreen = 'Admin Dashboard';
+  final String _currentAdminScreen = 'Admin Dashboard';
   String? _currentSelectedTab = 'Overview';
   Map<String, dynamic>? _selectedProgram;
   Map<String, dynamic>? _selectedUser;

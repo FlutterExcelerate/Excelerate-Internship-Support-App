@@ -143,14 +143,18 @@ class AiModule {
     if (user != null && user.id != current.userContext?.id) changed = true;
     if (profile != null) changed = true;
     if (screen != null &&
-        screen.screenName != current.currentScreenContext?.screenName)
+        screen.screenName != current.currentScreenContext?.screenName) {
       changed = true;
+    }
     if (system != null) changed = true;
     if (programs != null && programs != current.programsContext) changed = true;
-    if (assignments != null && assignments != current.assignmentsContext)
+    if (assignments != null && assignments != current.assignmentsContext) {
       changed = true;
-    if (pulse != null && pulse.lastMood != current.dailyPulseContext?.lastMood)
+    }
+    if (pulse != null &&
+        pulse.lastMood != current.dailyPulseContext?.lastMood) {
       changed = true;
+    }
     if (dashboard != null) changed = true;
     if (adminDashboardContext != null) changed = true;
     if (adminContentContext != null) changed = true;

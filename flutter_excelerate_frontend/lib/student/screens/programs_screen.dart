@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:animations/animations.dart';
 import 'package:flutter_excelerate_frontend/student/widgets/learnify_widgets.dart';
+import 'package:flutter_excelerate_frontend/utils/responsive.dart';
 import '../../theme/app_theme.dart';
 import 'program_details_screen.dart';
 import '../../firebase/models/program_model.dart';
@@ -30,7 +31,7 @@ class ProgramsScreen extends StatelessWidget {
 
         return ListView(
           key: const ValueKey('programs'),
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+          padding: context.pagePadding,
           children: [
             TextField(
               decoration: InputDecoration(

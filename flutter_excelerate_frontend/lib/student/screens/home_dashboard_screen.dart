@@ -9,6 +9,7 @@ import 'package:flutter_excelerate_frontend/ai_assistant/module/ai_module.dart';
 import 'package:flutter_excelerate_frontend/ai_assistant/widget/ai_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_excelerate_frontend/student/screens/profile_screen.dart';
+import 'package:flutter_excelerate_frontend/utils/responsive.dart';
 import 'package:intl/intl.dart';
 
 import '../../firebase/models/program_model.dart';
@@ -44,7 +45,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
       if (!AiModule.isInitialized) {
         AiModule.initialize();
       }
-      
+
       final uid = AuthRepository.instance.currentUser?.uid;
       if (uid != null) {
         _userSubscription = UserService.instance.userStream(uid).listen((user) {
@@ -69,14 +70,15 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
 
       _actionSubscription = AiModule.instance.actionStream.listen((action) {
         if (!mounted) return;
-        if (action.type == 'openDashboard')
+        if (action.type == 'openDashboard') {
           _openTab(0);
-        else if (action.type == 'openPrograms')
+        } else if (action.type == 'openPrograms') {
           _openTab(1);
-        else if (action.type == 'openNotifications')
+        } else if (action.type == 'openNotifications') {
           _openTab(2);
-        else if (action.type == 'openProfile')
+        } else if (action.type == 'openProfile') {
           _openTab(3);
+        }
       });
     });
   }
@@ -131,10 +133,14 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
               children: [
                 const Icon(Icons.school_rounded, color: LearnifyColors.primary),
                 const SizedBox(width: 8),
-                Text(
-                  _selectedIndex == 0
-                      ? 'Learnify'
-                      : _titleForIndex(_selectedIndex),
+                Flexible(
+                  child: Text(
+                    _selectedIndex == 0
+                        ? 'Learnify'
+                        : _titleForIndex(_selectedIndex),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -174,17 +180,25 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                 ),
               ),
               Positioned(
-                left: 20,
-                right: 20,
-                bottom: 5,
+                left: context.responsiveValue(
+                  mobile: 14.0,
+                  tablet: 20.0,
+                  desktop: 24.0,
+                ),
+                right: context.responsiveValue(
+                  mobile: 14.0,
+                  tablet: 20.0,
+                  desktop: 24.0,
+                ),
+                bottom: context.viewPadding.bottom + 5,
                 child: FloatingGlassNavBar(
                   selectedIndex: _selectedIndex,
                   onDestinationSelected: _openTab,
                 ),
               ),
               Positioned(
-                bottom: 85,
-                right: 16,
+                bottom: context.viewPadding.bottom + 85,
+                right: context.responsiveValue(mobile: 12.0, tablet: 16.0),
                 child: const AiLauncher(persona: StudentPersona()),
               ),
             ],
@@ -245,7 +259,7 @@ class _DashboardTab extends StatelessWidget {
 
     return ListView(
       key: const ValueKey('dashboard'),
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+      padding: context.pagePadding,
       children: [
         GlassCard(
           onTap: () => Navigator.of(context).push(
@@ -267,34 +281,27 @@ class _DashboardTab extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  const IconBadge(
-                    icon: Icons.favorite_rounded,
-                    color: LearnifyColors.wellness,
+              ResponsiveHeaderRow(
+                icon: Icons.favorite_rounded,
+                color: LearnifyColors.wellness,
+                trailing: FilledButton.tonal(
+                  onPressed: () {},
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(64, 38),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Daily Pulse', style: theme.textTheme.titleLarge),
-                        Text(
-                          'Log your reflection',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                      ],
+                  child: const Text('Start'),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Daily Pulse', style: theme.textTheme.titleLarge),
+                    Text(
+                      'Log your reflection',
+                      style: theme.textTheme.bodyMedium,
                     ),
-                  ),
-                  FilledButton.tonal(
-                    onPressed: () {},
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(64, 38),
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                    ),
-                    child: const Text('Start'),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 18),
               const Wrap(

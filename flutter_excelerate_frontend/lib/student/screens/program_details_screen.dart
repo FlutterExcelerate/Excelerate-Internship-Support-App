@@ -5,6 +5,7 @@ import '../../firebase/models/module_model.dart';
 import '../../firebase/models/program_model.dart';
 import '../../firebase/service/module_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/responsive.dart';
 import '../widgets/learnify_widgets.dart';
 
 class ProgramDetailsScreen extends StatelessWidget {
@@ -146,7 +147,7 @@ class _OverviewTab extends StatelessWidget {
     final programColor = Color(program.color);
 
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: context.pagePadding,
       children: [
         Hero(
           tag: 'program_hero_${program.title}',
@@ -258,26 +259,21 @@ class _OverviewTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
-        Row(
+        ResponsiveActionRow(
           children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  Feedback.forTap(context);
-                },
-                icon: const Icon(Icons.assignment_turned_in_outlined),
-                label: const Text('Submit'),
-              ),
+            OutlinedButton.icon(
+              onPressed: () {
+                Feedback.forTap(context);
+              },
+              icon: const Icon(Icons.assignment_turned_in_outlined),
+              label: const Text('Submit'),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  Feedback.forTap(context);
-                },
-                icon: const Icon(Icons.workspace_premium_outlined),
-                label: const Text('Certificate'),
-              ),
+            OutlinedButton.icon(
+              onPressed: () {
+                Feedback.forTap(context);
+              },
+              icon: const Icon(Icons.workspace_premium_outlined),
+              label: const Text('Certificate'),
             ),
           ],
         ),
@@ -440,7 +436,7 @@ class _ModulesTab extends StatelessWidget {
     final programColor = Color(program.color);
 
     return ListView.builder(
-      padding: const EdgeInsets.all(20),
+      padding: context.pagePadding,
       itemCount: modules.length,
       itemBuilder: (context, index) {
         final module = modules[index];
@@ -502,11 +498,11 @@ class _AnalyticsTab extends StatelessWidget {
     final programColor = Color(program.color);
 
     return GridView.count(
-      padding: const EdgeInsets.all(20),
-      crossAxisCount: MediaQuery.sizeOf(context).width > 640 ? 3 : 2,
+      padding: context.pagePadding,
+      crossAxisCount: context.gridCrossAxisCount.clamp(2, 4),
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
-      childAspectRatio: 1.25,
+      childAspectRatio: 0.85,
       children: [
         _MetricCard(
           label: 'Completion',
@@ -553,17 +549,24 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
+      padding: const EdgeInsets.all(10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          IconBadge(icon: icon, color: color, size: 44),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(value, style: Theme.of(context).textTheme.titleLarge),
-              Text(label, style: Theme.of(context).textTheme.bodyMedium),
-            ],
+          IconBadge(icon: icon, color: color, size: 32),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontSize: 16),
+          ),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
         ],
       ),
@@ -585,7 +588,7 @@ class _CertificatesTab extends StatelessWidget {
     final programColor = Color(program.color);
 
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: context.pagePadding,
       children: [
         if (isReady)
           Container(

@@ -5,6 +5,7 @@ import 'package:flutter_excelerate_frontend/firebase/service/repository.dart';
 import 'package:flutter_excelerate_frontend/firebase/service/user_service.dart';
 import 'package:flutter_excelerate_frontend/theme/app_theme.dart';
 import 'package:flutter_excelerate_frontend/student/widgets/learnify_widgets.dart';
+import 'package:flutter_excelerate_frontend/utils/responsive.dart';
 
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
@@ -24,7 +25,7 @@ class ProfileTab extends StatelessWidget {
 
         return ListView(
           key: const ValueKey('profile'),
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+          padding: context.pagePadding,
           children: [
             SectionCard(
               padding: const EdgeInsets.all(22),
@@ -90,24 +91,19 @@ class ProfileTab extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 18),
-                  Row(
+                  ResponsiveActionRow(
                     children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: appUser == null
-                              ? null
-                              : () => _showEditProfileDialog(context, appUser),
-                          icon: const Icon(Icons.edit_outlined),
-                          label: const Text('Edit Profile'),
-                        ),
+                      OutlinedButton.icon(
+                        onPressed: appUser == null
+                            ? null
+                            : () => _showEditProfileDialog(context, appUser),
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('Edit Profile'),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: () async => repository.signOut(),
-                          icon: const Icon(Icons.logout_rounded),
-                          label: const Text('Logout'),
-                        ),
+                      FilledButton.icon(
+                        onPressed: () async => repository.signOut(),
+                        icon: const Icon(Icons.logout_rounded),
+                        label: const Text('Logout'),
                       ),
                     ],
                   ),
@@ -126,99 +122,121 @@ class ProfileTab extends StatelessWidget {
     BuildContext context,
     AppUser appUser,
   ) async {
-    final nameController = TextEditingController(text: appUser.name);
-    final phoneController = TextEditingController(text: appUser.phone);
-    final cohortController = TextEditingController(text: appUser.cohort);
-    final locationController = TextEditingController(text: appUser.location);
-    final headlineController = TextEditingController(text: appUser.headline);
-    final skillsController = TextEditingController(
-      text: appUser.skills.join(', '),
-    );
-
     final updated = await showDialog<AppUser>(
       context: context,
-      builder: (context) => LearnifyDialogShell(
-        title: 'Edit Profile',
-        subtitle: 'Keep your learner details useful and up to date.',
-        icon: Icons.person_outline_rounded,
-        color: LearnifyColors.primary,
-        primaryLabel: 'Save',
-        onPrimaryPressed: () {
-          Navigator.of(context).pop(
-            appUser.copyWith(
-              name: nameController.text.trim(),
-              phone: phoneController.text.trim(),
-              cohort: cohortController.text.trim(),
-              location: locationController.text.trim(),
-              headline: headlineController.text.trim(),
-              skills: skillsController.text
-                  .split(',')
-                  .map((skill) => skill.trim())
-                  .where((skill) => skill.isNotEmpty)
-                  .toList(),
-            ),
-          );
-        },
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _dialogField(
-              nameController,
-              'Full name',
-              Icons.person_outline_rounded,
-            ),
-            _dialogField(
-              phoneController,
-              'Phone',
-              Icons.phone_outlined,
-              keyboardType: TextInputType.phone,
-            ),
-            _dialogField(cohortController, 'Cohort', Icons.groups_outlined),
-            _dialogField(
-              locationController,
-              'Location',
-              Icons.location_on_outlined,
-            ),
-            _dialogField(
-              headlineController,
-              'Headline',
-              Icons.short_text_rounded,
-              maxLines: 2,
-            ),
-            _dialogField(
-              skillsController,
-              'Skills, comma separated',
-              Icons.auto_awesome_outlined,
-            ),
-          ],
-        ),
-      ),
+      builder: (context) => _EditProfileDialog(appUser: appUser),
     );
-
-    nameController.dispose();
-    phoneController.dispose();
-    cohortController.dispose();
-    locationController.dispose();
-    headlineController.dispose();
-    skillsController.dispose();
 
     if (updated == null) return;
     await UserService.instance.updateUserProfile(updated);
   }
+}
 
-  Widget _dialogField(
-    TextEditingController controller,
-    String label,
-    IconData icon, {
-    int maxLines = 1,
-    TextInputType? keyboardType,
-  }) {
-    return LearnifyDialogField(
-      controller: controller,
-      label: label,
-      icon: icon,
-      maxLines: maxLines,
-      keyboardType: keyboardType,
+class _EditProfileDialog extends StatefulWidget {
+  const _EditProfileDialog({required this.appUser});
+
+  final AppUser appUser;
+
+  @override
+  State<_EditProfileDialog> createState() => _EditProfileDialogState();
+}
+
+class _EditProfileDialogState extends State<_EditProfileDialog> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _cohortController;
+  late final TextEditingController _locationController;
+  late final TextEditingController _headlineController;
+  late final TextEditingController _skillsController;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = widget.appUser;
+    _nameController = TextEditingController(text: user.name);
+    _phoneController = TextEditingController(text: user.phone);
+    _cohortController = TextEditingController(text: user.cohort);
+    _locationController = TextEditingController(text: user.location);
+    _headlineController = TextEditingController(text: user.headline);
+    _skillsController = TextEditingController(text: user.skills.join(', '));
+  }
+
+  @override
+  void dispose() {
+    disposeTextControllersAfterFrame([
+      _nameController,
+      _phoneController,
+      _cohortController,
+      _locationController,
+      _headlineController,
+      _skillsController,
+    ]);
+    super.dispose();
+  }
+
+  void _save() {
+    Navigator.of(context).pop(
+      widget.appUser.copyWith(
+        name: _nameController.text.trim(),
+        phone: _phoneController.text.trim(),
+        cohort: _cohortController.text.trim(),
+        location: _locationController.text.trim(),
+        headline: _headlineController.text.trim(),
+        skills: _skillsController.text
+            .split(',')
+            .map((skill) => skill.trim())
+            .where((skill) => skill.isNotEmpty)
+            .toList(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LearnifyDialogShell(
+      title: 'Edit Profile',
+      subtitle: 'Keep your learner details useful and up to date.',
+      icon: Icons.person_outline_rounded,
+      color: LearnifyColors.primary,
+      primaryLabel: 'Save',
+      onPrimaryPressed: _save,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          LearnifyDialogField(
+            controller: _nameController,
+            label: 'Full name',
+            icon: Icons.person_outline_rounded,
+          ),
+          LearnifyDialogField(
+            controller: _phoneController,
+            label: 'Phone',
+            icon: Icons.phone_outlined,
+            keyboardType: TextInputType.phone,
+          ),
+          LearnifyDialogField(
+            controller: _cohortController,
+            label: 'Cohort',
+            icon: Icons.groups_outlined,
+          ),
+          LearnifyDialogField(
+            controller: _locationController,
+            label: 'Location',
+            icon: Icons.location_on_outlined,
+          ),
+          LearnifyDialogField(
+            controller: _headlineController,
+            label: 'Headline',
+            icon: Icons.short_text_rounded,
+            maxLines: 2,
+          ),
+          LearnifyDialogField(
+            controller: _skillsController,
+            label: 'Skills, comma separated',
+            icon: Icons.auto_awesome_outlined,
+          ),
+        ],
+      ),
     );
   }
 }

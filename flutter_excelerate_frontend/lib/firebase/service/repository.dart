@@ -3,12 +3,18 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_excelerate_frontend/firebase/service/user_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+/// Web client ID from Firebase (client_type 3 in google-services.json).
+const _kGoogleWebClientId =
+    '908192292141-rk59unmab4qdafe25mn44nuf8qq00lld.apps.googleusercontent.com';
+
 class AuthRepository {
   AuthRepository._();
 
   static final AuthRepository instance = AuthRepository._();
 
-  final _googleSignIn = GoogleSignIn();
+  final _googleSignIn = GoogleSignIn(
+    serverClientId: _kGoogleWebClientId,
+  );
 
   FirebaseAuth get _auth => FirebaseAuth.instance;
 

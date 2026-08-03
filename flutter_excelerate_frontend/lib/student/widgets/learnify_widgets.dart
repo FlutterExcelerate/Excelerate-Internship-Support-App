@@ -1,8 +1,20 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_excelerate_frontend/theme/app_theme.dart';
+import 'package:flutter_excelerate_frontend/utils/responsive.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../main.dart';
+
+void disposeTextControllersAfterFrame(
+  Iterable<TextEditingController> controllers,
+) {
+  final controllersToDispose = List<TextEditingController>.of(controllers);
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    for (final controller in controllersToDispose) {
+      controller.dispose();
+    }
+  });
+}
 
 class SectionCard extends StatefulWidget {
   const SectionCard({
@@ -230,6 +242,7 @@ class Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final maxPillWidth = (context.screenWidth - 48).clamp(120.0, 320.0);
     final pill = Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -243,12 +256,17 @@ class Pill extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: color),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: GoogleFonts.plusJakartaSans(
-              color: color,
-              fontWeight: FontWeight.w700,
-              fontSize: 11,
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxPillWidth),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.plusJakartaSans(
+                color: color,
+                fontWeight: FontWeight.w700,
+                fontSize: 11,
+              ),
             ),
           ),
         ],
@@ -286,15 +304,22 @@ class ResponsiveScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final maxWidth = context.contentMaxWidth;
+
     return Scaffold(
       appBar: appBar,
       bottomNavigationBar: bottomNavigationBar,
       floatingActionButton: floatingActionButton,
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 920),
-            child: child,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: double.infinity,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: child,
+            ),
           ),
         ),
       ),
@@ -616,9 +641,10 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
         ? const Color(0xFFFFFFFF).withValues(alpha: 0.14)
         : theme.colorScheme.primary.withValues(alpha: 0.18);
     final items = widget.destinations;
+    final navHeight = context.isCompact ? 68.0 : 76.0;
 
     return Container(
-      height: 76,
+      height: navHeight,
       decoration: BoxDecoration(
         color: isDark
             ? const Color(0xFF111827).withValues(alpha: 0.55)
@@ -916,102 +942,250 @@ class LearnifyDialogShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final dialogMaxWidth = context.dialogMaxWidth;
+    final keyboardInset = context.viewInsets.bottom;
+    final usableHeight =
+        context.screenHeight -
+        context.viewPadding.vertical -
+        keyboardInset -
+        32;
+    final dialogMaxHeight = usableHeight.clamp(280.0, context.dialogMaxHeight);
+    final horizontalInset = context.isCompact ? 12.0 : 18.0;
+    final shellPadding = context.isCompact ? 16.0 : 22.0;
+    final footerAsColumn = context.screenWidth < 380;
 
-    return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
-      backgroundColor: Colors.transparent,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 440, maxHeight: 680),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: Material(
-            color: isDark ? const Color(0xFF101827) : const Color(0xFFF6FAF8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(22, 22, 18, 12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      IconBadge(icon: icon, color: color, size: 48),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(title, style: theme.textTheme.headlineMedium),
-                            if (subtitle != null) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                subtitle!,
-                                style: theme.textTheme.bodyMedium,
-                              ),
-                            ],
-                          ],
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      padding: EdgeInsets.only(bottom: keyboardInset),
+      child: Dialog(
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: horizontalInset,
+          vertical: context.viewPadding.top > 0 ? 16 : 24,
+        ),
+        backgroundColor: Colors.transparent,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: dialogMaxWidth,
+            maxHeight: dialogMaxHeight,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(28),
+            child: Material(
+              color: isDark ? const Color(0xFF101827) : const Color(0xFFF6FAF8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      shellPadding,
+                      shellPadding,
+                      shellPadding - 4,
+                      12,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        IconBadge(
+                          icon: icon,
+                          color: color,
+                          size: context.isCompact ? 42 : 48,
                         ),
-                      ),
-                      IconButton(
-                        tooltip: 'Close',
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.close_rounded),
-                      ),
-                    ],
-                  ),
-                ),
-                Flexible(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(22, 8, 22, 12),
-                    child: child,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.fromLTRB(22, 14, 22, 22),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF0B1220).withValues(alpha: 0.72)
-                        : Colors.white.withValues(alpha: 0.72),
-                    border: Border(
-                      top: BorderSide(
-                        color: isDark
-                            ? LearnifyColors.borderDark
-                            : LearnifyColors.borderLight,
-                      ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.headlineMedium,
+                              ),
+                              if (subtitle != null) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  subtitle!,
+                                  style: theme.textTheme.bodyMedium,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Close',
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Cancel'),
-                        ),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: EdgeInsets.fromLTRB(
+                        shellPadding,
+                        8,
+                        shellPadding,
+                        12,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: FilledButton.icon(
-                          onPressed: isPrimaryLoading ? null : onPrimaryPressed,
-                          icon: isPrimaryLoading
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.check_rounded),
-                          label: Text(primaryLabel),
-                        ),
-                      ),
-                    ],
+                      child: child,
+                    ),
                   ),
-                ),
-              ],
+                  Container(
+                    padding: EdgeInsets.fromLTRB(
+                      shellPadding,
+                      14,
+                      shellPadding,
+                      shellPadding,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF0B1220).withValues(alpha: 0.72)
+                          : Colors.white.withValues(alpha: 0.72),
+                      border: Border(
+                        top: BorderSide(
+                          color: isDark
+                              ? LearnifyColors.borderDark
+                              : LearnifyColors.borderLight,
+                        ),
+                      ),
+                    ),
+                    child: footerAsColumn
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _footerActions(context).first,
+                              const SizedBox(height: 12),
+                              _footerActions(context).last,
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              Expanded(child: _footerActions(context).first),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                flex: 2,
+                                child: _footerActions(context).last,
+                              ),
+                            ],
+                          ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  List<Widget> _footerActions(BuildContext context) {
+    return [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: const Text('Cancel'),
+      ),
+      FilledButton.icon(
+        onPressed: isPrimaryLoading ? null : onPrimaryPressed,
+        icon: isPrimaryLoading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.check_rounded),
+        label: Text(primaryLabel, maxLines: 1, overflow: TextOverflow.ellipsis),
+      ),
+    ];
+  }
+}
+
+class ResponsiveActionRow extends StatelessWidget {
+  const ResponsiveActionRow({
+    super.key,
+    required this.children,
+    this.spacing = 12,
+  });
+
+  final List<Widget> children;
+  final double spacing;
+
+  @override
+  Widget build(BuildContext context) {
+    if (context.screenWidth < 380) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            children[i],
+            if (i < children.length - 1) SizedBox(height: spacing),
+          ],
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        for (var i = 0; i < children.length; i++) ...[
+          Expanded(child: children[i]),
+          if (i < children.length - 1) SizedBox(width: spacing),
+        ],
+      ],
+    );
+  }
+}
+
+class ResponsiveHeaderRow extends StatelessWidget {
+  const ResponsiveHeaderRow({
+    super.key,
+    required this.icon,
+    required this.color,
+    required this.child,
+    this.trailing,
+    this.iconSize = 48,
+    this.spacing = 14,
+  });
+
+  final IconData icon;
+  final Color color;
+  final Widget child;
+  final Widget? trailing;
+  final double iconSize;
+  final double spacing;
+
+  @override
+  Widget build(BuildContext context) {
+    final badge = IconBadge(
+      icon: icon,
+      color: color,
+      size: context.isCompact ? iconSize - 6 : iconSize,
+    );
+
+    if (context.screenWidth < 340) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              badge,
+              if (trailing != null) ...[const Spacer(), trailing!],
+            ],
+          ),
+          SizedBox(height: spacing),
+          child,
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        badge,
+        SizedBox(width: spacing),
+        Expanded(child: child),
+        if (trailing != null) ...[const SizedBox(width: 8), trailing!],
+      ],
     );
   }
 }

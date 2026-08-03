@@ -19,7 +19,7 @@ class _AdminCodeDialogState extends State<AdminCodeDialog> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    disposeTextControllersAfterFrame([_controller]);
     super.dispose();
   }
 

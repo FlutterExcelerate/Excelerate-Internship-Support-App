@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_excelerate_frontend/firebase/service/auth_controller.dart';
+import 'package:flutter_excelerate_frontend/utils/responsive.dart';
 import 'package:rounded_loading_button_plus/rounded_loading_button.dart';
 import '../../theme/app_theme.dart';
 import '../../student/widgets/learnify_widgets.dart';
@@ -56,10 +57,11 @@ class _LoginScreenState extends State<LoginScreen>
           builder: (context, constraints) {
             final isWide = constraints.maxWidth > 720;
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: context.screenPadding,
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight: MediaQuery.sizeOf(context).height - 48,
+                  minHeight:
+                      context.screenHeight - context.screenPadding.vertical,
                 ),
                 child: IntrinsicHeight(
                   child: FadeTransition(
@@ -269,6 +271,7 @@ class _LoginActionsState extends State<_LoginActions> {
             color: theme.colorScheme.primary,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
                   Icons.g_mobiledata_rounded,
@@ -276,9 +279,13 @@ class _LoginActionsState extends State<_LoginActions> {
                   color: Colors.white,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'Continue with Google',
-                  style: theme.textTheme.titleMedium,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Continue with Google',
+                    maxLines: 1,
+                    style: theme.textTheme.titleMedium,
+                  ),
                 ),
               ],
             ),
@@ -290,6 +297,7 @@ class _LoginActionsState extends State<_LoginActions> {
             color: theme.colorScheme.secondary,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
                   Icons.admin_panel_settings_outlined,
@@ -297,7 +305,14 @@ class _LoginActionsState extends State<_LoginActions> {
                   color: Colors.white,
                 ),
                 const SizedBox(width: 8),
-                Text('Continue as Admin', style: theme.textTheme.titleMedium),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Continue as Admin',
+                    maxLines: 1,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
               ],
             ),
           ),

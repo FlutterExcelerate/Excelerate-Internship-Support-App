@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_excelerate_frontend/student/widgets/learnify_widgets.dart';
+import 'package:flutter_excelerate_frontend/utils/responsive.dart';
 import '../../theme/app_theme.dart';
 import '../../firebase/models/notification_model.dart';
 import '../../firebase/service/notification_service.dart';
@@ -44,7 +45,7 @@ class NotificationsScreen extends StatelessWidget {
 
         return ListView(
           key: const ValueKey('notifications'),
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+          padding: context.pagePadding,
           children: [
             const Wrap(
               spacing: 8,

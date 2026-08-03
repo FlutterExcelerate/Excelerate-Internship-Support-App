@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../firebase/models/daily_pulse_model.dart';
 import '../../firebase/service/daily_pulse_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/responsive.dart';
 import '../widgets/learnify_widgets.dart';
 
 class DailyPulseScreen extends StatefulWidget {
@@ -86,7 +87,7 @@ class _DailyPulseScreenState extends State<DailyPulseScreen> {
     return ResponsiveScaffold(
       appBar: AppBar(title: const Text('Daily Pulse')),
       child: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: context.pagePadding,
         children: [
           SectionCard(
             padding: const EdgeInsets.all(22),

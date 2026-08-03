@@ -21,6 +21,7 @@ import '../../firebase/service/repository.dart';
 import '../../firebase/service/program_service.dart';
 import '../../firebase/service/user_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/responsive.dart';
 import '../../student/widgets/learnify_widgets.dart';
 import '../tabs/admin_content_tab.dart';
 import '../tabs/admin_overview_tab.dart';
@@ -133,23 +134,52 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       if (AiModule.isInitialized) {
                         AiModule.instance.patchApplicationContext(
                           programs: AiProgramsContext(
-                            programs: programs.map((c) => AiProgramContract(
-                              id: c.id,
-                              title: c.title,
-                              category: c.category,
-                              description: c.description,
-                            )).toList(),
+                            programs: programs
+                                .map(
+                                  (c) => AiProgramContract(
+                                    id: c.id,
+                                    title: c.title,
+                                    category: c.category,
+                                    description: c.description,
+                                  ),
+                                )
+                                .toList(),
                           ),
                           adminUsersContext: AiAdminUsersContext(
-                            adminUsers: users.where((u) => u.role == 'admin').map((u) => u.uid).toList(),
-                            activeStudents: users.where((u) => u.role == 'student' && u.isActive).map((u) => '${u.name} (${u.email})').toList(),
-                            inactiveStudents: users.where((u) => u.role == 'student' && !u.isActive).map((u) => '${u.name} (${u.email})').toList(),
+                            adminUsers: users
+                                .where((u) => u.role == 'admin')
+                                .map((u) => u.uid)
+                                .toList(),
+                            activeStudents: users
+                                .where((u) => u.role == 'student' && u.isActive)
+                                .map((u) => '${u.name} (${u.email})')
+                                .toList(),
+                            inactiveStudents: users
+                                .where(
+                                  (u) => u.role == 'student' && !u.isActive,
+                                )
+                                .map((u) => '${u.name} (${u.email})')
+                                .toList(),
                           ),
                           adminContentContext: AiAdminContentContext(
-                            publishedPrograms: programs.where((p) => p.isPublished).map((p) => p.title).toList(),
-                            draftPrograms: programs.where((p) => !p.isPublished).map((p) => p.title).toList(),
-                            categories: programs.map((p) => p.category).toSet().toList(),
-                            upcomingDeadlines: programs.where((p) => p.applicationDeadline.isNotEmpty).map((p) => '${p.title}: ${p.applicationDeadline}').toList(),
+                            publishedPrograms: programs
+                                .where((p) => p.isPublished)
+                                .map((p) => p.title)
+                                .toList(),
+                            draftPrograms: programs
+                                .where((p) => !p.isPublished)
+                                .map((p) => p.title)
+                                .toList(),
+                            categories: programs
+                                .map((p) => p.category)
+                                .toSet()
+                                .toList(),
+                            upcomingDeadlines: programs
+                                .where((p) => p.applicationDeadline.isNotEmpty)
+                                .map(
+                                  (p) => '${p.title}: ${p.applicationDeadline}',
+                                )
+                                .toList(),
                           ),
                         );
                       }
@@ -193,7 +223,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                               color: LearnifyColors.secondary,
                             ),
                             const SizedBox(width: 8),
-                            Text(_titleForIndex(safeIndex)),
+                            Flexible(
+                              child: Text(
+                                _titleForIndex(safeIndex),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
                           ],
                         ),
                         actions: [
@@ -234,9 +270,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             ),
                           ),
                           Positioned(
-                            left: 20,
-                            right: 20,
-                            bottom: 5,
+                            left: context.responsiveValue(
+                              mobile: 14.0,
+                              tablet: 20.0,
+                              desktop: 24.0,
+                            ),
+                            right: context.responsiveValue(
+                              mobile: 14.0,
+                              tablet: 20.0,
+                              desktop: 24.0,
+                            ),
+                            bottom: context.viewPadding.bottom + 5,
                             child: FloatingGlassNavBar(
                               selectedIndex: _selectedIndex,
                               destinations: _navDestinations,
@@ -244,8 +288,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             ),
                           ),
                           Positioned(
-                            bottom: 85,
-                            right: 16,
+                            bottom: context.viewPadding.bottom + 85,
+                            right: context.responsiveValue(
+                              mobile: 12.0,
+                              tablet: 16.0,
+                            ),
                             child: const AiLauncher(persona: AdminPersona()),
                           ),
                         ],
@@ -513,20 +560,11 @@ class _NotificationFormDialogState extends State<_NotificationFormDialog> {
 
   final _titleController = TextEditingController();
   final _messageController = TextEditingController();
-  bool _controllersDisposed = false;
   String _selectedCategory = _categories.first;
 
   @override
   void dispose() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!_controllersDisposed) {
-          _controllersDisposed = true;
-          _titleController.dispose();
-          _messageController.dispose();
-        }
-      });
-    });
+    disposeTextControllersAfterFrame([_titleController, _messageController]);
     super.dispose();
   }
 
@@ -576,7 +614,7 @@ class _NotificationFormDialogState extends State<_NotificationFormDialog> {
             icon: Icons.title_rounded,
           ),
           DropdownButtonFormField<String>(
-            value: _selectedCategory,
+            initialValue: _selectedCategory,
             decoration: const InputDecoration(
               labelText: 'Category',
               prefixIcon: Icon(Icons.local_offer_outlined),

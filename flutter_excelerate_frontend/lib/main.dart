@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_excelerate_frontend/firebase/auth/auth_gate.dart';
 import 'package:flutter_excelerate_frontend/firebase/auth/firebase_options.dart';
 import 'package:flutter_excelerate_frontend/firebase/service/admin_session_guard.dart';
+import 'package:flutter_excelerate_frontend/utils/responsive.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
@@ -30,16 +31,19 @@ class LearnifyApp extends StatefulWidget {
 class _LearnifyAppState extends State<LearnifyApp> {
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<ThemeMode>(
-      valueListenable: LearnifyApp.themeNotifier,
-      builder: (_, ThemeMode currentMode, __) {
+    return ListenableBuilder(
+      listenable: LearnifyApp.themeNotifier,
+      builder: (_, __) {
         return MaterialApp(
           navigatorKey: LearnifyApp.navigatorKey,
           title: 'Learnify',
           debugShowCheckedModeBanner: false,
           theme: LearnifyTheme.light(),
           darkTheme: LearnifyTheme.dark(),
-          themeMode: currentMode,
+          themeMode: LearnifyApp.themeNotifier.value,
+          builder: (context, child) {
+            return ResponsiveAppBuilder(child: child ?? const SizedBox.shrink());
+          },
           home: const AuthGate(),
         );
       },

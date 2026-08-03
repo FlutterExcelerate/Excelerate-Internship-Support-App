@@ -221,7 +221,6 @@ class AdminFormDialog extends StatefulWidget {
 
 class _AdminFormDialogState extends State<AdminFormDialog> {
   late final List<TextEditingController> _controllers;
-  bool _controllersDisposed = false;
 
   @override
   void initState() {
@@ -233,16 +232,7 @@ class _AdminFormDialogState extends State<AdminFormDialog> {
 
   @override
   void dispose() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!_controllersDisposed) {
-          _controllersDisposed = true;
-          for (final c in _controllers) {
-            c.dispose();
-          }
-        }
-      });
-    });
+    disposeTextControllersAfterFrame(_controllers);
     super.dispose();
   }
 
