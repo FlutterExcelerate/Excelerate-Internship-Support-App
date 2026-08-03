@@ -9,7 +9,6 @@ The **Excelerate Internship Support App** is designed to help interns succeed gl
 A mobile app that supports interns worldwide by:
 - **Daily Pulse** → quick daily check‑ins for reflection and mentor feedback.  
 - **AI Team Builder** → automatically forming balanced teams using skills + time zones.  
-- **Portfolio Integration** → certificates and badges added to student profiles.  
 
 ---
 
@@ -34,13 +33,12 @@ Interns face three main challenges:
 - Mentor dashboard for quick feedback.  
 - AI team formation (skills + time zone).  
 - Team dashboard (members, chat, shared goals).  
-- Certificates/badges integrated into portfolio.  
 
 ---
 
 ##  Tech Stack
 - **Frontend:** Flutter, Dart  
-- **Backend:** Supabase/PostgreSQL, Firebase Messaging  
+- **Backend:** Firebase Messaging  
 - **AI Engine:** Gemini API (resume parsing + skill matching)  
 - **Security:** JWT Auth, role‑based access  
 
