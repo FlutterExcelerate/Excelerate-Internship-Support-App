@@ -1,8 +1,10 @@
+import 'package:animations/animations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_excelerate_frontend/firebase/models/app_user.dart';
 import 'package:flutter_excelerate_frontend/firebase/service/repository.dart';
 import 'package:flutter_excelerate_frontend/firebase/service/user_service.dart';
+import 'package:flutter_excelerate_frontend/student/screens/feedback_screen.dart';
 import 'package:flutter_excelerate_frontend/theme/app_theme.dart';
 import 'package:flutter_excelerate_frontend/student/widgets/learnify_widgets.dart';
 import 'package:flutter_excelerate_frontend/utils/responsive.dart';
@@ -112,6 +114,29 @@ class ProfileTab extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             _ProfileInfoCard(appUser: appUser),
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        FeedbackScreen(),
+                    transitionsBuilder:
+                        (context, animation, secondaryAnimation, child) {
+                          return SharedAxisTransition(
+                            animation: animation,
+                            secondaryAnimation: secondaryAnimation,
+                            transitionType: SharedAxisTransitionType.scaled,
+                            child: child,
+                          );
+                        },
+                    transitionDuration: const Duration(milliseconds: 400),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.feedback_outlined),
+              label: const Text('FeedBack'),
+            ),
           ],
         );
       },

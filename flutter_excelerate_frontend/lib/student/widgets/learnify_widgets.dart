@@ -954,126 +954,150 @@ class LearnifyDialogShell extends StatelessWidget {
     final shellPadding = context.isCompact ? 16.0 : 22.0;
     final footerAsColumn = context.screenWidth < 380;
 
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
-      padding: EdgeInsets.only(bottom: keyboardInset),
-      child: Dialog(
-        insetPadding: EdgeInsets.symmetric(
-          horizontal: horizontalInset,
-          vertical: context.viewPadding.top > 0 ? 16 : 24,
-        ),
-        backgroundColor: Colors.transparent,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: dialogMaxWidth,
-            maxHeight: dialogMaxHeight,
+    final header = Padding(
+      padding: EdgeInsets.fromLTRB(
+        shellPadding,
+        shellPadding,
+        shellPadding - 4,
+        12,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IconBadge(
+            icon: icon,
+            color: color,
+            size: context.isCompact ? 42 : 48,
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: Material(
-              color: isDark ? const Color(0xFF101827) : const Color(0xFFF6FAF8),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      shellPadding,
-                      shellPadding,
-                      shellPadding - 4,
-                      12,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.headlineMedium,
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 4),
+                  Text(subtitle!, style: theme.textTheme.bodyMedium),
+                ],
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'Close',
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.close_rounded),
+          ),
+        ],
+      ),
+    );
+
+    final footer = Container(
+      padding: EdgeInsets.fromLTRB(
+        shellPadding,
+        14,
+        shellPadding,
+        shellPadding,
+      ),
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF0B1220).withValues(alpha: 0.72)
+            : Colors.white.withValues(alpha: 0.72),
+        border: Border(
+          top: BorderSide(
+            color: isDark
+                ? LearnifyColors.borderDark
+                : LearnifyColors.borderLight,
+          ),
+        ),
+      ),
+      child: footerAsColumn
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _footerActions(context).first,
+                const SizedBox(height: 12),
+                _footerActions(context).last,
+              ],
+            )
+          : Row(
+              children: [
+                Expanded(child: _footerActions(context).first),
+                const SizedBox(width: 12),
+                Expanded(flex: 2, child: _footerActions(context).last),
+              ],
+            ),
+    );
+
+    return Dialog(
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: horizontalInset,
+        vertical: context.viewPadding.top > 0 ? 16 : 24,
+      ),
+      backgroundColor: Colors.transparent,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: dialogMaxWidth,
+          maxHeight: dialogMaxHeight,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: Material(
+            color: isDark ? const Color(0xFF101827) : const Color(0xFFF6FAF8),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // If there isn't enough vertical space for the header, footer, and at least some content,
+                // fallback to scrolling the entire dialog content.
+                if (constraints.maxHeight < 340) {
+                  return SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        IconBadge(
-                          icon: icon,
-                          color: color,
-                          size: context.isCompact ? 42 : 48,
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.headlineMedium,
-                              ),
-                              if (subtitle != null) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  subtitle!,
-                                  style: theme.textTheme.bodyMedium,
-                                ),
-                              ],
-                            ],
+                        header,
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            shellPadding,
+                            8,
+                            shellPadding,
+                            12,
                           ),
+                          child: child,
                         ),
-                        IconButton(
-                          tooltip: 'Close',
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.close_rounded),
-                        ),
+                        footer,
                       ],
                     ),
-                  ),
-                  Flexible(
-                    child: SingleChildScrollView(
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: EdgeInsets.fromLTRB(
-                        shellPadding,
-                        8,
-                        shellPadding,
-                        12,
-                      ),
-                      child: child,
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.fromLTRB(
-                      shellPadding,
-                      14,
-                      shellPadding,
-                      shellPadding,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF0B1220).withValues(alpha: 0.72)
-                          : Colors.white.withValues(alpha: 0.72),
-                      border: Border(
-                        top: BorderSide(
-                          color: isDark
-                              ? LearnifyColors.borderDark
-                              : LearnifyColors.borderLight,
+                  );
+                }
+
+                // Otherwise, keep the standard layout with a sticky footer and scrollable body.
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    header,
+                    Flexible(
+                      child: SingleChildScrollView(
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        padding: EdgeInsets.fromLTRB(
+                          shellPadding,
+                          8,
+                          shellPadding,
+                          12,
                         ),
+                        child: child,
                       ),
                     ),
-                    child: footerAsColumn
-                        ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _footerActions(context).first,
-                              const SizedBox(height: 12),
-                              _footerActions(context).last,
-                            ],
-                          )
-                        : Row(
-                            children: [
-                              Expanded(child: _footerActions(context).first),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                flex: 2,
-                                child: _footerActions(context).last,
-                              ),
-                            ],
-                          ),
-                  ),
-                ],
-              ),
+                    footer,
+                  ],
+                );
+              },
             ),
           ),
         ),
