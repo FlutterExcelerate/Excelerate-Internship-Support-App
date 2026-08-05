@@ -41,50 +41,65 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   Widget build(BuildContext context) {
     Future<void> submitFeedback() async {
       final firebaseUser = FirebaseAuth.instance.currentUser;
+      try {
+        if (firebaseUser == null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text("Please login first.")));
+          return;
+        }
+        if (!_formKey.currentState!.validate()) {
+          return;
+        }
+        setState(() {
+          _isLoading = true;
+        });
+        final appUser = await UserService.instance.getUser(firebaseUser.uid);
 
-      if (firebaseUser == null) {
+        if (appUser == null) {
+          throw Exception("User profile not found.");
+        }
+
+        final feedback = FeedbackModel(
+          id: '',
+          uid: firebaseUser.uid,
+          userName: appUser.name,
+          userEmail: appUser.email,
+          message: _messageController.text.trim(),
+          category: _category,
+          createdAt: Timestamp.now(),
+        );
+        await FeedbackService.instance.addFeedback(feedback: feedback);
+        if (!mounted) return;
+
+        // ignore: use_build_context_synchronously
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Thank you! Your feedback has been submitted."),
+          ),
+        );
+        _titleController.clear();
+        _messageController.clear();
+        setState(() {
+          _category = "General";
+        });
+      } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(
+          // ignore: use_build_context_synchronously
           context,
-        ).showSnackBar(const SnackBar(content: Text("Please login first.")));
-        return;
+        ).showSnackBar(
+          SnackBar(
+            content: Text("Something went wrong please try again later"),
+          ),
+        );
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
-      if (!_formKey.currentState!.validate()) {
-        return;
-      }
-      setState(() {
-        _isLoading = true;
-      });
-      final appUser = await UserService.instance.getUser(firebaseUser.uid);
-
-      if (appUser == null) {
-        throw Exception("User profile not found.");
-      }
-
-      final feedback = FeedbackModel(
-        id: '',
-        uid: firebaseUser.uid,
-        userName: appUser.name,
-        userEmail: appUser.email,
-        message: _messageController.text.trim(),
-        category: _category,
-        createdAt: Timestamp.now(),
-      );
-      await FeedbackService.instance.addFeedback(feedback: feedback);
-      if (!mounted) return;
-
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Thank you! Your feedback has been submitted."),
-        ),
-      );
-      _titleController.clear();
-
-      _messageController.clear();
-
-      setState(() {
-        _category = "General";
-      });
     }
 
     return Scaffold(
