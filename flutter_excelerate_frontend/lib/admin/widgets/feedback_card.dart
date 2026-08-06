@@ -4,20 +4,27 @@ import 'package:flutter_excelerate_frontend/student/widgets/learnify_widgets.dar
 import '../../firebase/models/feedback_model.dart';
 import '../../theme/app_theme.dart';
 
-class FeedbackCard extends StatelessWidget {
+class FeedbackCard extends StatefulWidget {
   const FeedbackCard({super.key, required this.feedback, required this.onTap});
 
   final FeedbackModel feedback;
   final VoidCallback onTap;
 
   @override
+  State<FeedbackCard> createState() => _FeedbackCardState();
+}
+
+class _FeedbackCardState extends State<FeedbackCard> {
+  bool _expanded = false;
+  @override
   Widget build(BuildContext context) {
+    final feedback = widget.feedback;
     final theme = Theme.of(context);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: SectionCard(
-        onTap: onTap,
+        onTap: widget.onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -27,9 +34,9 @@ class FeedbackCard extends StatelessWidget {
                   radius: 22,
                   backgroundColor: LearnifyColors.primary.withOpacity(.15),
                   child: Text(
-                    feedback.userName.isEmpty
+                    widget.feedback.userName.isEmpty
                         ? "?"
-                        : feedback.userName[0].toUpperCase(),
+                        : widget.feedback.userName[0].toUpperCase(),
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -41,12 +48,12 @@ class FeedbackCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        feedback.userName,
+                        widget.feedback.userName,
                         style: theme.textTheme.titleMedium,
                       ),
 
                       Text(
-                        feedback.userEmail,
+                        widget.feedback.userEmail,
                         style: theme.textTheme.bodySmall,
                       ),
                     ],
@@ -54,30 +61,54 @@ class FeedbackCard extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: 18),
-
-            const SizedBox(height: 8),
-
-            //--------------------------------------------------
-            // Message
-            //--------------------------------------------------
-            Text(
-              feedback.message,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodyMedium,
+            AnimatedSize(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AnimatedCrossFade(
+                    duration: const Duration(milliseconds: 250),
+                    crossFadeState: _expanded
+                        ? CrossFadeState.showSecond
+                        : CrossFadeState.showFirst,
+                    firstChild: Text(
+                      feedback.message,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    secondChild: Text(
+                      feedback.message,
+                      style: theme.textTheme.titleSmall,
+                    ),
+                  ),
+                  if (feedback.message.length > 180)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(0, 30),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _expanded = !_expanded;
+                          });
+                        },
+                        child: Text(_expanded ? "Read less" : "Read more"),
+                      ),
+                    ),
+                ],
+              ),
             ),
-
             const SizedBox(height: 16),
-
-            //--------------------------------------------------
-            // Footer
-            //--------------------------------------------------
             Row(
               children: [
                 Pill(
-                  label: feedback.category,
+                  label: widget.feedback.category,
                   icon: Icons.category_outlined,
                   color: LearnifyColors.info,
                 ),
@@ -85,14 +116,10 @@ class FeedbackCard extends StatelessWidget {
                 const SizedBox(width: 10),
 
                 Pill(
-                  label: _formatDate(feedback.createdAt.toDate()),
+                  label: _formatDate(widget.feedback.createdAt.toDate()),
                   icon: Icons.schedule,
                   color: LearnifyColors.secondary,
                 ),
-
-                const Spacer(),
-
-                const Icon(Icons.arrow_forward_ios_rounded, size: 18),
               ],
             ),
           ],

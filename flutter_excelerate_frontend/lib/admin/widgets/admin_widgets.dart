@@ -377,10 +377,14 @@ class AdminProgramCard extends StatelessWidget {
     super.key,
     required this.program,
     required this.onAddModule,
+    required this.onDeleteProgram,
+    this.onKnowMore,
   });
 
   final ProgramModel program;
   final ValueChanged<ProgramModel> onAddModule;
+  final ValueChanged<ProgramModel> onDeleteProgram;
+  final VoidCallback? onKnowMore;
 
   @override
   Widget build(BuildContext context) {
@@ -415,11 +419,18 @@ class AdminProgramCard extends StatelessWidget {
                 onPressed: () => onAddModule(program),
                 icon: const Icon(Icons.add_circle_outline_rounded),
               ),
+              IconButton(
+                tooltip: 'Delete program',
+                onPressed: () => onDeleteProgram(program),
+                icon: Icon(Icons.delete_outline_rounded, color: Theme.of(context).colorScheme.error),
+              ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
             program.description,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 12),
@@ -461,6 +472,17 @@ class AdminProgramCard extends StatelessWidget {
               ),
             ],
           ),
+          if (onKnowMore != null) ...[
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: onKnowMore,
+                icon: const Icon(Icons.info_outline_rounded),
+                label: const Text('Know More'),
+              ),
+            ),
+          ],
         ],
       ),
     );

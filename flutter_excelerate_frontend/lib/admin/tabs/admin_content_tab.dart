@@ -4,6 +4,7 @@ import 'package:flutter_excelerate_frontend/firebase/models/feedback_model.dart'
 import 'package:flutter_excelerate_frontend/firebase/models/notification_model.dart';
 import 'package:flutter_excelerate_frontend/firebase/models/program_model.dart';
 import 'package:flutter_excelerate_frontend/theme/app_theme.dart';
+import 'package:flutter_excelerate_frontend/student/screens/program_details_screen.dart';
 import '../widgets/admin_widgets.dart';
 
 class AdminContentTab extends StatefulWidget {
@@ -14,6 +15,7 @@ class AdminContentTab extends StatefulWidget {
     required this.onAddProgram,
     required this.onAddModule,
     required this.onAddNotification,
+    required this.onDeleteProgram,
     this.feedback = const [],
   });
 
@@ -24,6 +26,7 @@ class AdminContentTab extends StatefulWidget {
   final VoidCallback onAddProgram;
   final ValueChanged<ProgramModel> onAddModule;
   final VoidCallback onAddNotification;
+  final ValueChanged<ProgramModel> onDeleteProgram;
 
   @override
   State<AdminContentTab> createState() => _AdminContentTabState();
@@ -63,6 +66,14 @@ class _AdminContentTabState extends State<AdminContentTab> {
               child: AdminProgramCard(
                 program: program,
                 onAddModule: widget.onAddModule,
+                onDeleteProgram: widget.onDeleteProgram,
+                onKnowMore: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ProgramDetailsScreen(program: program),
+                    ),
+                  );
+                },
               ),
             ),
           ),

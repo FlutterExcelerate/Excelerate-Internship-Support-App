@@ -45,9 +45,16 @@ class ProgramDetailsScreen extends StatelessWidget {
                 ],
                 flexibleSpace: FlexibleSpaceBar(
                   centerTitle: true,
-                  titlePadding: const EdgeInsets.only(bottom: 58),
+                  titlePadding: const EdgeInsets.only(
+                    bottom: 58,
+                    left: 32,
+                    right: 32,
+                  ),
                   title: Text(
                     program.title,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,

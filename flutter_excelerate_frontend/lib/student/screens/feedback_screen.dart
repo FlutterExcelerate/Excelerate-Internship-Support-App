@@ -19,7 +19,10 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   final _messageController = TextEditingController();
   bool _isLoading = false;
   String _category = "General";
-
+  static const int _minFeedbackLength = 10;
+  static const int _maxFeedbackLength = 800;
+  bool get isValid =>
+      _messageController.text.trim().length >= _minFeedbackLength;
   final List<String> _categories = [
     "General",
     "Course",
@@ -35,6 +38,15 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     _titleController.dispose();
     _messageController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _messageController.addListener(() {
+      setState(() {});
+    });
   }
 
   @override
@@ -108,7 +120,12 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       body: SafeArea(
         child: GradientBlobBackground(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              20,
+              20,
+              MediaQuery.of(context).viewInsets.bottom + 20,
+            ),
 
             child: Form(
               key: _formKey,
@@ -142,26 +159,42 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   TextFormField(
                     controller: _messageController,
                     maxLines: 6,
+                    maxLength: _maxFeedbackLength,
                     decoration: const InputDecoration(
                       labelText: "Feedback",
+                      hintText: "Tell us about your experience...",
                       border: OutlineInputBorder(),
+                      alignLabelWithHint: true,
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return "Enter your feedback";
+                        return "Please enter your feedback.";
+                      }
+                      final text = value.trim();
+                      if (text.length < _minFeedbackLength) {
+                        return "Feedback must be at least $_minFeedbackLength characters.";
+                      }
+                      if (text.length > _maxFeedbackLength) {
+                        return "Feedback cannot exceed $_maxFeedbackLength characters.";
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 30),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 55,
-                    child: FilledButton(
-                      onPressed: _isLoading ? null : submitFeedback,
-                      child: _isLoading
-                          ? const CircularProgressIndicator()
-                          : const Text("Submit Feedback"),
+
+                  SafeArea(
+                    top: false,
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 55,
+                      child: FilledButton(
+                        onPressed: (_isLoading || !isValid)
+                            ? null
+                            : submitFeedback,
+                        child: _isLoading
+                            ? const CircularProgressIndicator()
+                            : const Text("Submit Feedback"),
+                      ),
                     ),
                   ),
                 ],

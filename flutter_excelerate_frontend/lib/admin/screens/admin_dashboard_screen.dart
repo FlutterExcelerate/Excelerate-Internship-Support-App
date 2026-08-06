@@ -215,6 +215,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         onAddProgram: () => _showProgramDialog(programs.length),
                         onAddModule: _showModuleDialog,
                         onAddNotification: _showNotificationDialog,
+                        onDeleteProgram: _deleteProgram,
                       ),
                       AdminUsersTab(
                         users: users,
@@ -469,6 +470,36 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         module: added,
       );
       _showSnack('${added.title} was added to ${program.title}.');
+    }
+  }
+
+  Future<void> _deleteProgram(ProgramModel program) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Program'),
+        content: Text('Are you sure you want to delete ${program.title}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(
+              'Delete',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _programService.deleteProgram(program.id);
+      if (mounted) {
+        _showSnack('${program.title} was deleted.');
+      }
     }
   }
 
