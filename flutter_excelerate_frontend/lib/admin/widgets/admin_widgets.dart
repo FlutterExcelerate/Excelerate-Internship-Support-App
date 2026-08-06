@@ -1,6 +1,8 @@
+import 'package:animations/animations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_excelerate_frontend/firebase/models/notification_model.dart';
+import 'package:flutter_excelerate_frontend/student/screens/program_details_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_theme.dart';
 import '../../student/widgets/learnify_widgets.dart';
@@ -378,112 +380,122 @@ class AdminProgramCard extends StatelessWidget {
     required this.program,
     required this.onAddModule,
     required this.onDeleteProgram,
-    this.onKnowMore,
   });
 
   final ProgramModel program;
   final ValueChanged<ProgramModel> onAddModule;
   final ValueChanged<ProgramModel> onDeleteProgram;
-  final VoidCallback? onKnowMore;
 
   @override
   Widget build(BuildContext context) {
-    return SectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              IconBadge(
-                icon: Icons.school_outlined,
-                color: Color(program.color),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      program.title,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    Text(
-                      '${program.category} - ${program.duration} - ${program.level}',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                ProgramDetailsScreen(program: program),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return SharedAxisTransition(
+                    animation: animation,
+                    secondaryAnimation: secondaryAnimation,
+                    transitionType: SharedAxisTransitionType.scaled,
+                    child: child,
+                  );
+                },
+            transitionDuration: const Duration(milliseconds: 400),
+          ),
+        );
+      },
+      child: SectionCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                IconBadge(
+                  icon: Icons.school_outlined,
+                  color: Color(program.color),
                 ),
-              ),
-              IconButton(
-                tooltip: 'Add module',
-                onPressed: () => onAddModule(program),
-                icon: const Icon(Icons.add_circle_outline_rounded),
-              ),
-              IconButton(
-                tooltip: 'Delete program',
-                onPressed: () => onDeleteProgram(program),
-                icon: Icon(Icons.delete_outline_rounded, color: Theme.of(context).colorScheme.error),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            program.description,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              Pill(
-                label: program.isPublished ? 'Published' : 'Draft',
-                icon: program.isPublished
-                    ? Icons.public_rounded
-                    : Icons.drafts_outlined,
-                color: program.isPublished
-                    ? LearnifyColors.success
-                    : LearnifyColors.warning,
-              ),
-              if (program.mentorName.isNotEmpty)
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        program.title,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      Text(
+                        '${program.category} - ${program.duration} - ${program.level}',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Add module',
+                  onPressed: () => onAddModule(program),
+                  icon: const Icon(Icons.add_circle_outline_rounded),
+                ),
+                IconButton(
+                  tooltip: 'Delete program',
+                  onPressed: () => onDeleteProgram(program),
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              program.description,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
                 Pill(
-                  label: program.mentorName,
-                  icon: Icons.person_outline_rounded,
+                  label: program.isPublished ? 'Published' : 'Draft',
+                  icon: program.isPublished
+                      ? Icons.public_rounded
+                      : Icons.drafts_outlined,
+                  color: program.isPublished
+                      ? LearnifyColors.success
+                      : LearnifyColors.warning,
+                ),
+                if (program.mentorName.isNotEmpty)
+                  Pill(
+                    label: program.mentorName,
+                    icon: Icons.person_outline_rounded,
+                    color: LearnifyColors.info,
+                  ),
+                if (program.capacity > 0)
+                  Pill(
+                    label: '${program.capacity} seats',
+                    icon: Icons.event_seat_outlined,
+                    color: LearnifyColors.secondary,
+                  ),
+                if (program.applicationDeadline.isNotEmpty)
+                  Pill(
+                    label: 'Due ${program.applicationDeadline}',
+                    icon: Icons.event_outlined,
+                    color: LearnifyColors.warning,
+                  ),
+                const Pill(
+                  label: 'Modules in Firestore',
+                  icon: Icons.cloud_done_outlined,
                   color: LearnifyColors.info,
                 ),
-              if (program.capacity > 0)
-                Pill(
-                  label: '${program.capacity} seats',
-                  icon: Icons.event_seat_outlined,
-                  color: LearnifyColors.secondary,
-                ),
-              if (program.applicationDeadline.isNotEmpty)
-                Pill(
-                  label: 'Due ${program.applicationDeadline}',
-                  icon: Icons.event_outlined,
-                  color: LearnifyColors.warning,
-                ),
-              const Pill(
-                label: 'Modules in Firestore',
-                icon: Icons.cloud_done_outlined,
-                color: LearnifyColors.info,
-              ),
-            ],
-          ),
-          if (onKnowMore != null) ...[
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: onKnowMore,
-                icon: const Icon(Icons.info_outline_rounded),
-                label: const Text('Know More'),
-              ),
+              ],
             ),
           ],
-        ],
+        ),
       ),
     );
   }

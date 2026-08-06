@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_excelerate_frontend/firebase/models/app_user.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../firebase/models/module_model.dart';
@@ -7,6 +9,7 @@ import '../../firebase/service/module_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/responsive.dart';
 import '../widgets/learnify_widgets.dart';
+import '../../firebase/service/user_service.dart';
 
 class ProgramDetailsScreen extends StatelessWidget {
   const ProgramDetailsScreen({super.key, required this.program});
@@ -109,25 +112,42 @@ class ProgramDetailsScreen extends StatelessWidget {
               ),
             ];
           },
-          body: StreamBuilder<List<ModuleModel>>(
-            stream: ModuleService.instance.modulesStream(program.id),
-            builder: (context, snapshot) {
-              final modules = snapshot.data ?? [];
-              final progress = modules.isEmpty
-                  ? 0.0
-                  : modules.where((m) => m.isComplete).length / modules.length;
+          body: FutureBuilder<AppUser?>(
+            future: UserService.instance.getUser(
+              FirebaseAuth.instance.currentUser!.uid,
+            ),
+            builder: (context, userSnapshot) {
+              final appUser = userSnapshot.data;
+              if (userSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              return StreamBuilder<List<ModuleModel>>(
+                stream: ModuleService.instance.modulesStream(program.id),
+                builder: (context, snapshot) {
+                  final modules = snapshot.data ?? [];
 
-              return TabBarView(
-                children: [
-                  _OverviewTab(
-                    program: program,
-                    modules: modules,
-                    progress: progress,
-                  ),
-                  _ModulesTab(program: program, modules: modules),
-                  _AnalyticsTab(program: program, progress: progress),
-                  _CertificatesTab(program: program, progress: progress),
-                ],
+                  final progress = modules.isEmpty
+                      ? 0.0
+                      : modules.where((m) => m.isComplete).length /
+                            modules.length;
+
+                  return TabBarView(
+                    children: [
+                      _OverviewTab(
+                        program: program,
+                        modules: modules,
+                        progress: progress,
+                        user: appUser,
+                      ),
+
+                      _ModulesTab(program: program, modules: modules),
+
+                      _AnalyticsTab(program: program, progress: progress),
+
+                      _CertificatesTab(program: program, progress: progress),
+                    ],
+                  );
+                },
               );
             },
           ),
@@ -142,11 +162,13 @@ class _OverviewTab extends StatelessWidget {
     required this.program,
     required this.modules,
     required this.progress,
+    required this.user,
   });
 
   final ProgramModel program;
   final List<ModuleModel> modules;
   final double progress;
+  final AppUser? user;
 
   @override
   Widget build(BuildContext context) {
@@ -174,23 +196,15 @@ class _OverviewTab extends StatelessWidget {
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              program.title,
-                              style: theme.textTheme.titleLarge,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              program.description,
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                          ],
+                        child: Text(
+                          program.title,
+                          style: theme.textTheme.titleLarge,
                         ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 16),
+                  Text(program.description, style: theme.textTheme.bodyMedium),
                   const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -247,19 +261,21 @@ class _OverviewTab extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        Feedback.forTap(context);
-                      },
-                      style: FilledButton.styleFrom(
-                        backgroundColor: programColor,
+
+                  if (user?.role == "student")
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: () {
+                          Feedback.forTap(context);
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: programColor,
+                        ),
+                        icon: const Icon(Icons.play_arrow_rounded),
+                        label: const Text("Enroll / Continue"),
                       ),
-                      icon: const Icon(Icons.play_arrow_rounded),
-                      label: const Text('Enroll / Continue'),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -268,20 +284,22 @@ class _OverviewTab extends StatelessWidget {
         const SizedBox(height: 14),
         ResponsiveActionRow(
           children: [
-            OutlinedButton.icon(
-              onPressed: () {
-                Feedback.forTap(context);
-              },
-              icon: const Icon(Icons.assignment_turned_in_outlined),
-              label: const Text('Submit'),
-            ),
-            OutlinedButton.icon(
-              onPressed: () {
-                Feedback.forTap(context);
-              },
-              icon: const Icon(Icons.workspace_premium_outlined),
-              label: const Text('Certificate'),
-            ),
+            if (user?.role == "student")
+              OutlinedButton.icon(
+                onPressed: () {
+                  Feedback.forTap(context);
+                },
+                icon: const Icon(Icons.assignment_turned_in_outlined),
+                label: const Text('Submit'),
+              ),
+            if (user?.role == "student")
+              OutlinedButton.icon(
+                onPressed: () {
+                  Feedback.forTap(context);
+                },
+                icon: const Icon(Icons.workspace_premium_outlined),
+                label: const Text('Certificate'),
+              ),
           ],
         ),
         const SizedBox(height: 14),

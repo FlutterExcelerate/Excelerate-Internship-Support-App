@@ -44,9 +44,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   StreamSubscription<AiActionRequest>? _actionSubscription;
 
+  late final Stream<List<ProgramModel>> _programsStream;
+  late final Stream<List<NotificationModel>> _notificationsStream;
+  late final Stream<List<AppUser>> _usersStream;
+  late final Stream<List<DailyPulseModel>> _pulsesStream;
+
   @override
   void initState() {
     super.initState();
+    _programsStream = _programService.programsStream();
+    _notificationsStream = NotificationService.instance.notificationsStream();
+    _usersStream = UserService.instance.usersStream();
+    _pulsesStream = DailyPulseService.instance.pulsesStream();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!AiModule.isInitialized) {
         AiModule.initialize();
@@ -104,7 +113,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<ProgramModel>>(
-      stream: _programService.programsStream(),
+      stream: _programsStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -117,13 +126,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         }
 
         return StreamBuilder<List<NotificationModel>>(
-          stream: NotificationService.instance.notificationsStream(),
+          stream: _notificationsStream,
           builder: (context, notificationSnapshot) {
             return StreamBuilder<List<AppUser>>(
-              stream: UserService.instance.usersStream(),
+              stream: _usersStream,
               builder: (context, userSnapshot) {
                 return StreamBuilder<List<DailyPulseModel>>(
-                  stream: DailyPulseService.instance.pulsesStream(),
+                  stream: _pulsesStream,
                   builder: (context, pulseSnapshot) {
                     final users = userSnapshot.data ?? [];
                     final pulses = pulseSnapshot.data ?? [];

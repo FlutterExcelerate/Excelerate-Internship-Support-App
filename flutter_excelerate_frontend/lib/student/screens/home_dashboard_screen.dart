@@ -38,9 +38,12 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
   StreamSubscription<AiActionRequest>? _actionSubscription;
   StreamSubscription<AppUser?>? _userSubscription;
 
+  late final Stream<List<ProgramModel>> _programsStream;
+
   @override
   void initState() {
     super.initState();
+    _programsStream = ProgramService.instance.publishedProgramsStream();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!AiModule.isInitialized) {
         AiModule.initialize();
@@ -93,7 +96,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<ProgramModel>>(
-      stream: ProgramService.instance.publishedProgramsStream(),
+      stream: _programsStream,
       builder: (context, snapshot) {
         final courses = snapshot.data ?? [];
 

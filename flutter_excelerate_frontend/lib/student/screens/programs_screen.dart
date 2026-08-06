@@ -129,6 +129,8 @@ class _ProgramCard extends StatelessWidget {
                     const SizedBox(height: 5),
                     Text(
                       program.description,
+                      maxLines: 5,
+                      overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ],

@@ -4,8 +4,6 @@ import 'package:flutter_excelerate_frontend/firebase/models/feedback_model.dart'
 import 'package:flutter_excelerate_frontend/firebase/models/notification_model.dart';
 import 'package:flutter_excelerate_frontend/firebase/models/program_model.dart';
 import 'package:flutter_excelerate_frontend/theme/app_theme.dart';
-import 'package:flutter_excelerate_frontend/student/screens/program_details_screen.dart';
-import 'package:animations/animations.dart';
 import '../widgets/admin_widgets.dart';
 
 class AdminContentTab extends StatefulWidget {
@@ -68,24 +66,6 @@ class _AdminContentTabState extends State<AdminContentTab> {
                 program: program,
                 onAddModule: widget.onAddModule,
                 onDeleteProgram: widget.onDeleteProgram,
-                onKnowMore: () {
-                  Navigator.of(context).push(
-                    PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) =>
-                          ProgramDetailsScreen(program: program),
-                      transitionsBuilder:
-                          (context, animation, secondaryAnimation, child) {
-                            return SharedAxisTransition(
-                              animation: animation,
-                              secondaryAnimation: secondaryAnimation,
-                              transitionType: SharedAxisTransitionType.scaled,
-                              child: child,
-                            );
-                          },
-                      transitionDuration: const Duration(milliseconds: 400),
-                    ),
-                  );
-                },
               ),
             ),
           ),

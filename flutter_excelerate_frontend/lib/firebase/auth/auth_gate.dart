@@ -67,7 +67,6 @@ class AuthGate extends StatelessWidget {
                 ),
               );
             }
-
             if (!userSnapshot.hasData) {
               UserService.instance.createUserIfNotExists(snapshot.data!);
 

@@ -5,7 +5,7 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
-		<string>Flutter Excelerate Frontend</string>
+		<string>Learnify</string>
 		<key>CFBundleExecutable</key>
 		<string>908192292141-k0n5c1kkuell6j1ug4pjpfncjhr641ta.apps.googleusercontent.com</string>
 		<!-- Google Sign-in Section -->
@@ -26,7 +26,7 @@
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
 		<key>CFBundleName</key>
-		<string>flutter_excelerate_frontend</string>
+		<string>Learnify</string>
 		<key>CFBundlePackageType</key>
 		<string>APPL</string>
 		<key>CFBundleShortVersionString</key>
